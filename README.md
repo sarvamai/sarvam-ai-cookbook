@@ -1,2 +1,2 @@
-# sarvam-cookbook
-Open Source Sarvam Cookbook
+# sarvarm-ai-cookbook
+Open Source Sarvam AI Cookbook
