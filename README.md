@@ -3,7 +3,7 @@
 Welcome to the **Sarvam AI Cookbook**! This repository provides example code, guides, and tutorials to help you accomplish common tasks using the **Sarvam AI API**. Whether you're building conversational AI, generating text, or working on other AI-powered applications, these resources will help you get started quickly.
 
 #### Getting Started
-To use the examples in this cookbook, you'll need a **Sarvam AI API key**. If you don’t have one yet, sign up for a free account [here](https://sarvam.ai). Once you have your API key, set it as an environment variable:
+To use the examples in this cookbook, you'll need a **Sarvam AI API key**. If you don’t have one yet, sign up for a free account [here](https://dashboard.sarvam.ai/). Once you have your API key, set it as an environment variable:
 
 ```bash
 export SARVAM_API_KEY=<your API key>
