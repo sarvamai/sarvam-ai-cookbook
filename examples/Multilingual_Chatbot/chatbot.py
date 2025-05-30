@@ -1,5 +1,4 @@
 import argparse
-import json
 import requests
 from typing import List, Dict, Any
 
@@ -7,7 +6,7 @@ from typing import List, Dict, Any
 class MultilingualChatbot:
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.sarvam.ai/chat/completions"
+        self.base_url = "https://api.sarvam.ai/v1/chat/completions"
         self.translate_url = (
             "https://api.sarvam.ai/translate/text"  # Add translation endpoint
         )
