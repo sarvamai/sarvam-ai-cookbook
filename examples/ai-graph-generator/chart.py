@@ -150,7 +150,7 @@ def main():
                     visualization_data = agent.generate_visualization(user_request)
                     
                     if visualization_data:
-                        st.image(visualization_data, caption="Generated Visualization", use_column_width=True)
+                        st.image(visualization_data, caption="Generated Visualization", use_container_width=True)
                         st.session_state.generated_code = agent.last_generated_code
                     else:
                         st.error("Failed to generate visualization. Please try again with a different request.")
