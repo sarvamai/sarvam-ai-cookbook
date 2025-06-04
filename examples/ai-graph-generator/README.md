@@ -1,4 +1,4 @@
-📊 AI Graph Generator
+## AI Graph Generator
 An intelligent graph and chart generator that transforms natural language prompts into visual representations using Python and Matplotlib, powered by Sarvam AI. This tool can be run locally or within a secure E2B sandbox environment.
 
 ✨ Features
