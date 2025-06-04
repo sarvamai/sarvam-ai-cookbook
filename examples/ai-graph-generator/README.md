@@ -54,13 +54,16 @@ Here are some examples of prompts you can use:
 
 The script will generate and save your chart as output.png in the current directory.
 
-📦 Files Included
+### 📦 Files Included
+
+```
 ai-graph-generator/
 ├── chart.py               # The main script for chart generation.
 ├── .env.example           # Template file for your Sarvam API key.
 ├── requirements.txt       # Lists all Python dependencies.
 ├── README.md              # This documentation file.
 └── sample-chart.png       # An optional sample chart output.
+```
 
 ### 📚 Additional Resources
 
