@@ -3,3 +3,4 @@ examples/**/*.pyc
 examples/**/*.pyo
 examples/**/env
 examples/**/venv
+.DS_Store
