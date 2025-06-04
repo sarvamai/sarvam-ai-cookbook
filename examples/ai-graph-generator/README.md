@@ -1,16 +1,12 @@
 ## AI Graph Generator
 An intelligent graph and chart generator that transforms natural language prompts into visual representations using Python and Matplotlib, powered by Sarvam AI. This tool can be run locally or within a secure E2B sandbox environment.
 
-✨ Features
-Intelligent Conversion: Converts simple English prompts into detailed visual charts.
-
-Diverse Chart Types: Supports the generation of bar, line, pie, and scatter plots.
-
-AI-Powered Understanding: Leverages the Sarvam AI API to accurately interpret user intent.
-
-Flexible Data Handling: Includes capabilities for random and sample data generation.
-
-Secure Cloud Execution: Fully compatible with E2B Sandboxes for secure, cloud-based operations.
+### ✨ Features
+- Intelligent Conversion: Converts simple English prompts into detailed visual charts.
+- Diverse Chart Types: Supports the generation of bar, line, pie, and scatter plots.
+- AI-Powered Understanding: Leverages the Sarvam AI API to accurately interpret user intent.
+- Flexible Data Handling: Includes capabilities for random and sample data generation.
+- Secure Cloud Execution: Fully compatible with E2B Sandboxes for secure, cloud-based operations.
 
 🚀 Getting Started
 Prerequisites
