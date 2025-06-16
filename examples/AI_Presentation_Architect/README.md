@@ -24,3 +24,9 @@ Clone the repository and install the necessary dependencies.
 ```bash
 # Install required libraries
 pip install -r requirements.txt
+
+Run the Streamlit app:
+
+Bash
+streamlit run app.py
+
