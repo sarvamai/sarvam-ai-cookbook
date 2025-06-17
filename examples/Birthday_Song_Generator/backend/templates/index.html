@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Birthday Song Generator</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 3px #555;
+        }
+
+        form {
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 700px;
+            margin: auto;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 2px solid #fda085;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background-color: #ff6f61;
+            color: white;
+            border: none;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #e85a4f;
+        }
+
+        .song-output {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff8e7;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
+        }
+
+        .song-line {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #5a3e36;
+            white-space: pre-line; /* for preserving newlines if needed */
+        }
+    </style>
+</head>
+<body>
+    <h1>🎉 Birthday Song Generator 🎶</h1>
+    <form id="song-form">
+        <label>What’s your friend’s full name and how old are they turning?</label>
+        <input type="text" name="answer0" required>
+
+        <label>If your friend was a color, what color would they be and why?:</label>
+        <input type="text" name="answer1" required>
+
+        <label>What’s your friend’s favorite hobby or something they do all the time?</label>
+        <input type="text" name="answer2" required>
+
+        <label>Who is your friend’s best buddy, and what’s a funny memory they share?</label>
+        <input type="text" name="answer3" required>
+
+        <label>What’s your friend’s favorite food they can’t live without?</label>
+        <input type="text" name="answer4" required>
+
+        <label>If your friend could visit any place right now, where would it be?</label>
+        <input type="text" name="answer5" required>
+
+        <label>What’s a recent funny or happy moment your friend had?</label>
+        <input type="text" name="answer6" required>
+
+        <label>What’s a quirky or adorable habit your friend has that you notice?</label>
+        <input type="text" name="answer7" required>
+
+        <label>What’s a funny nickname or joke people have for your friend?</label>
+        <input type="text" name="answer8" required>
+
+        <label>What’s a silly or embarrassing moment your friend secretly enjoys?</label>
+        <input type="text" name="answer9" required>
+
+        <button type="submit">Generate Birthday Song</button>
+    </form>
+
+    <div class="song-output" id="song-output" style="display: none;">
+        <h2>Your Birthday Song 🎵</h2>
+        <div id="song-lines"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('song-form');
+        const outputBox = document.getElementById('song-output');
+        const songLines = document.getElementById('song-lines');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const answers = [];
+
+            for (let i = 0; i < 10; i++) {
+                answers.push(formData.get(`answer${i}`));
+            }
+
+            const response = await fetch("/generate-song", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ answers: answers })
+            });
+
+            const data = await response.json();
+
+            songLines.innerHTML = "";
+
+            const p = document.createElement("p");
+            p.innerHTML = data.quotes.replace(/\n/g, "<br>");  // preserve line breaks
+            p.classList.add("song-line");
+            songLines.appendChild(p);
+
+            outputBox.style.display = "block";
+        });
+    </script>
+</body>
+</html>
