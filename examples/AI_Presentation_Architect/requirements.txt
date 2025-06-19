@@ -1,4 +1,4 @@
 streamlit
 requests
-python-pptx==0.6.23
+python-pptx
 pandas
