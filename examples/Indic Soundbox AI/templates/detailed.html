@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conversation Details - Sarvam AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Center content on the page */
+        justify-content: flex-start; /* Align to top */
+        min-height: 100vh;
+    }
+    .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        width: 80%;
+        max-width: 700px;
+        margin-top: 20px;
+    }
+    .detail-item {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #eee;
+    }
+    .detail-item strong {
+        color: #007bff;
+    }
+    .actions {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .actions button, .actions a {
+        margin: 5px;
+    }
+    audio {
+        width: 100%;
+        margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Conversation Details</h1>
+
+    <div id="transcriptItem" class="detail-item" style="display: none;">
+      <p><strong>You said:</strong> <span id="transcript">—</span></p>
+    </div>
+    <div id="langItem" class="detail-item" style="display: none;">
+      <p><strong>Detected Lang/Script:</strong> <span id="lang">—</span></p>
+    </div>
+    <div id="botReplyItem" class="detail-item" style="display: none;">
+      <p><strong>Bot says:</strong> <span id="botReply">—</span></p>
+    </div>
+
+    <div id="audioPlayerContainer" class="detail-item" style="display: none;">
+        <p><strong>Response Audio:</strong></p>
+        <audio id="responseAudio" controls autoplay></audio>
+        <button id="playAgainBtn" class="button">Play Again</button>
+    </div>
+    
+    <div id="errorMessage" class="detail-item" style="color: red; display: none;">
+        <p><strong>Error:</strong> <span id="errorText"></span></p>
+    </div>
+
+    <div class="actions">
+      <a href="{{ url_for('index') }}" class="button">Record New Message</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+
+      const transcript = params.get('transcript');
+      const lang = params.get('lang');
+      const botReply = params.get('botReply');
+      const audioId = params.get('audioId');
+      const error = params.get('error');
+
+      const transcriptEl = document.getElementById('transcript');
+      const langEl = document.getElementById('lang');
+      const botReplyEl = document.getElementById('botReply');
+      const responseAudio = document.getElementById('responseAudio');
+      const playAgainBtn = document.getElementById('playAgainBtn');
+      
+      const transcriptItem = document.getElementById('transcriptItem');
+      const langItem = document.getElementById('langItem');
+      const botReplyItem = document.getElementById('botReplyItem');
+      const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+      const errorMessageEl = document.getElementById('errorMessage');
+      const errorTextEl = document.getElementById('errorText');
+
+      if (error) {
+        errorTextEl.textContent = decodeURIComponent(error);
+        errorMessageEl.style.display = 'block';
+        audioPlayerContainer.style.display = 'none';
+      } else {
+        if (transcript) {
+          transcriptEl.textContent = decodeURIComponent(transcript);
+          transcriptItem.style.display = 'block';
+        }
+        if (lang) {
+          langEl.textContent = decodeURIComponent(lang);
+          langItem.style.display = 'block';
+        }
+        if (botReply) {
+          botReplyEl.textContent = decodeURIComponent(botReply);
+          botReplyItem.style.display = 'block';
+        }
+        if (audioId) {
+            const audioSourceUrl = `/get_audio/${audioId}`;
+            console.log("Setting audio source to:", audioSourceUrl);
+            responseAudio.src = audioSourceUrl;
+            audioPlayerContainer.style.display = 'block';
+            playAgainBtn.onclick = () => responseAudio.play();
+        } else if (!error) {
+            console.warn("No audioId provided and no general error. Disabling player.");
+            const audioErrorText = document.createElement('p');
+            audioErrorText.textContent = "Audio for this response is not available.";
+            audioPlayerContainer.innerHTML = "";
+            audioPlayerContainer.appendChild(audioErrorText);
+            audioPlayerContainer.style.display = 'block';
+            playAgainBtn.style.display = 'none';
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,56 @@
+/* General body styling - keep minimal if pages have their own specific body styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0; /* Reset margin */
+    padding: 20px;
+    background-color: #f0f2f5; /* A very neutral fallback */
+    color: #333;
+}
+
+/* Keep h1 styling if it was generic enough or adjust as needed */
+h1 {
+    color: #333;
+    margin-bottom: 20px; /* Added some default margin */
+}
+
+/* Generic button styling - this might be used by detailed.html or other future pages */
+.button, button {
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 1em; /* Ensure consistent base font size */
+    text-decoration: none; /* For <a> tags styled as buttons */
+    display: inline-block; /* For <a> tags */
+    text-align: center;
+}
+
+.button:hover, button:hover {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Styles for paragraph or display items, could be used on detailed.html */
+p.display-item {
+    background-color: white;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid #e0e0e0;
+}
+
+span.display-value {
+    font-weight: normal;
+    color: #555;
+}
+
+/* Remove old specific p and span styles if they are now handled by .display-item etc. */
+/* p { ... } */
+/* span { ... } */ 
