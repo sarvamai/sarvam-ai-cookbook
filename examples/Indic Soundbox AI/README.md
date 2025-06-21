@@ -1,4 +1,4 @@
-# Sarvam Voice AI Agent Prototype
+# Sarvam Indic Soundbox AI (Inspired from Paytm and PhonePe soundboxes)
 This Agent enables Indian merchants via their Soundbox (lets say Paytm or PhonePe Soundbox) to get insights about their Sales, How to grow their busines? in their local language of choice and also enables organisations like Paytm and PhonePe to connect with their merchants in a easier manner in indic languages.
 
 This uses Sarvam ASR, Language Indentification, Sarvam-M Thinking Model and TTS - all built on Indic Stack.
