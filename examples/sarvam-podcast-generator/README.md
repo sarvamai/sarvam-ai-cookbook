@@ -16,6 +16,9 @@ A powerful AI-driven document analysis and podcast generation tool built with Ne
 - ⬇️ **Download Support**: Download generated audio files for offline listening
 - 🔄 **Automatic Cleanup**: Scheduled cleanup of temporary audio files
 
+## Demo Video
+https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -76,9 +79,6 @@ A powerful AI-driven document analysis and podcast generation tool built with Ne
    
    # UploadThing Configuration (for file storage)
    UPLOADTHING_TOKEN=your_uploadthing_token
-   
-   # Inngest Configuration (for background jobs)
-   INNGEST_SIGNING_KEY=your_inngest_signing_key
    ```
 
 4. **Run the development servers**
@@ -219,7 +219,6 @@ Handles cleanup of temporary audio files.
 ## ⚠️ Important Notes
 
 **PDF Size Limitations**: For optimal performance, please upload PDFs with moderate content length. Very large PDFs or documents with extensive text may cause podcast generation to fail due to the context length limitations of the Sarvam M model. The system automatically chunks large content but very extensive documents may still face limitations.
-
 
 ## 📝 License
 
