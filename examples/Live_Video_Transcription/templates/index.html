@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarvam AI Live Video Transcription</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .video-section {
+            margin-bottom: 30px;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6bd8;
+        }
+        
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .transcription-section {
+            margin-top: 30px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        #transcript-container {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f8f9fa;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .transcript-line {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .text {
+            color: #333;
+        }
+        
+        .upload-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .file-input {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Sarvam AI Live Video Transcription</h1>
+        
+        <div id="status" class="status">Connecting to Sarvam AI...</div>
+        
+        <div class="upload-section">
+            <h3>Upload Video or Use Sample</h3>
+            <input type="file" id="video-upload" accept="video/*" class="file-input">
+            <p>Or use the sample video below</p>
+        </div>
+        
+        <div class="video-section">
+            <video id="video" controls preload="metadata">
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn" class="btn">Start Transcription</button>
+            <button id="stop-btn" class="btn" disabled>Stop Transcription</button>
+            <button id="clear-btn" class="btn">Clear Transcript</button>
+        </div>
+        
+        <div class="transcription-section">
+            <h3>Live Transcription</h3>
+            <div id="transcript-container">
+                <p style="color: #666; text-align: center;">
+                    Click "Start Transcription" and play the video to see live transcripts here...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // DOM elements
+        const video = document.getElementById('video');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const transcriptContainer = document.getElementById('transcript-container');
+        const statusDiv = document.getElementById('status');
+        const videoUpload = document.getElementById('video-upload');
+        
+        // State
+        let isTranscribing = false;
+        let audioContext = null;
+        let source = null;
+        let processor = null;
+        
+        // Socket event handlers
+        socket.on('connect', () => {
+            updateStatus('Connected to Sarvam AI transcription service', 'connected');
+        });
+        
+        socket.on('disconnect', () => {
+            updateStatus('Disconnected from server', 'error');
+            stopTranscription();
+        });
+        
+        socket.on('status', (data) => {
+            updateStatus(data.message, 'connected');
+        });
+        
+        socket.on('transcription_result', (data) => {
+            if (data.transcript) {
+                addTranscriptLine(data.formatted_time, data.transcript);
+            }
+        });
+        
+        socket.on('transcription_error', (data) => {
+            updateStatus(`Error: ${data.error}`, 'error');
+        });
+        
+        // File upload handler
+        videoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                video.src = url;
+                video.load();
+            }
+        });
+        
+        // Button event handlers
+        startBtn.addEventListener('click', startTranscription);
+        stopBtn.addEventListener('click', stopTranscription);
+        clearBtn.addEventListener('click', clearTranscript);
+        
+        function startTranscription() {
+            if (isTranscribing) return;
+            
+            try {
+                setupAudioCapture();
+                isTranscribing = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus('Transcription started - play the video!', 'connected');
+                
+                // Auto-play video if paused
+                if (video.paused) {
+                    video.play().catch(e => {
+                        console.warn('Auto-play failed:', e);
+                        updateStatus('Please manually play the video', 'error');
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to start transcription:', error);
+                updateStatus('Failed to start transcription: ' + error.message, 'error');
+            }
+        }
+        
+        function stopTranscription() {
+            if (!isTranscribing) return;
+            
+            cleanupAudio();
+            isTranscribing = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            updateStatus('Transcription stopped', 'connected');
+        }
+        
+        function clearTranscript() {
+            transcriptContainer.innerHTML = `
+                <p style="color: #666; text-align: center;">
+                    Transcript cleared. Start transcription to see new results...
+                </p>
+            `;
+        }
+        
+        function setupAudioCapture() {
+            // Create audio context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create audio source from video element
+            source = audioContext.createMediaElementSource(video);
+            
+            // Create script processor for real-time audio processing
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+            
+            processor.onaudioprocess = (e) => {
+                if (!isTranscribing) return;
+                
+                const audioData = e.inputBuffer.getChannelData(0);
+                
+                // Convert to WAV format and send to server
+                const wavData = audioDataToWAV(audioData, audioContext.sampleRate);
+                
+                socket.emit('audio_chunk', {
+                    audio: arrayBufferToBase64(wavData),
+                    timestamp: video.currentTime
+                });
+            };
+            
+            // Connect the audio graph
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+            
+            // Ensure video audio is not muted
+            video.muted = false;
+            video.volume = 1.0;
+        }
+        
+        function cleanupAudio() {
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+        
+        function audioDataToWAV(audioData, sampleRate) {
+            // Convert Float32Array to 16-bit PCM
+            const targetSampleRate = 16000; // Sarvam AI requirement
+            const resampledData = resampleAudio(audioData, sampleRate, targetSampleRate);
+            
+            // Create WAV file
+            const buffer = new ArrayBuffer(44 + resampledData.length * 2);
+            const view = new DataView(buffer);
+            
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + resampledData.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true); // mono
+            view.setUint32(24, targetSampleRate, true);
+            view.setUint32(28, targetSampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, resampledData.length * 2, true);
+            
+            // Convert float samples to 16-bit PCM
+            let offset = 44;
+            for (let i = 0; i < resampledData.length; i++) {
+                const sample = Math.max(-1, Math.min(1, resampledData[i]));
+                view.setInt16(offset, sample * 0x7FFF, true);
+                offset += 2;
+            }
+            
+            return buffer;
+        }
+        
+        function resampleAudio(audioData, fromSampleRate, toSampleRate) {
+            if (fromSampleRate === toSampleRate) {
+                return audioData;
+            }
+            
+            const ratio = fromSampleRate / toSampleRate;
+            const newLength = Math.round(audioData.length / ratio);
+            const result = new Float32Array(newLength);
+            
+            for (let i = 0; i < newLength; i++) {
+                const index = i * ratio;
+                const indexInt = Math.floor(index);
+                const indexFrac = index - indexInt;
+                
+                if (indexInt + 1 < audioData.length) {
+                    result[i] = audioData[indexInt] * (1 - indexFrac) + 
+                               audioData[indexInt + 1] * indexFrac;
+                } else {
+                    result[i] = audioData[indexInt];
+                }
+            }
+            
+            return result;
+        }
+        
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+        
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+        
+        function addTranscriptLine(timestamp, text) {
+            const line = document.createElement('div');
+            line.className = 'transcript-line';
+            line.innerHTML = `
+                <span class="timestamp">${timestamp}</span>
+                <span class="text">${text}</span>
+            `;
+            
+            // Clear placeholder text if it exists
+            if (transcriptContainer.querySelector('p')) {
+                transcriptContainer.innerHTML = '';
+            }
+            
+            transcriptContainer.appendChild(line);
+            transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+        }
+        
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (isTranscribing) {
+                stopTranscription();
+            }
+        });
+    </script>
+</body>
+</html> 
