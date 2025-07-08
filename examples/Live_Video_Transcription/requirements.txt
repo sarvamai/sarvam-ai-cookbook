@@ -3,4 +3,4 @@ flask-socketio==5.3.6
 sarvamai>=1.0.0
 pydub==0.25.1
 python-socketio==5.10.0
-eventlet==0.33.3 
+eventlet==0.35.2 
