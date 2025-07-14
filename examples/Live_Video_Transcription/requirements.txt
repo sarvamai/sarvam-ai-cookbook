@@ -1,6 +1,10 @@
-flask==3.0.0
-flask-socketio==5.3.6
-sarvamai>=1.0.0
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+python-socketio==5.9.0
+eventlet==0.33.3
 pydub==0.25.1
-python-socketio==5.10.0
-eventlet==0.35.2 
+sarvamai==0.1.0
+yt-dlp==2023.10.13
+gunicorn==21.2.0
+python-engineio==4.7.1
+websockets==12.0 
