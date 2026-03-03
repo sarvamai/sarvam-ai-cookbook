@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Streaming STT — Sarvam AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            color: #e0e0e0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 720px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            padding: 14px 32px;
+            font-size: 15px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.25s;
+        }
+
+        button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .record-btn {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .record-btn:hover:not(:disabled) {
+            background: #43a047;
+            transform: scale(1.04);
+        }
+
+        .stop-btn {
+            background: #ef5350;
+            color: #fff;
+        }
+
+        .stop-btn:hover:not(:disabled) {
+            background: #e53935;
+            transform: scale(1.04);
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .status.connected {
+            background: rgba(76, 175, 80, 0.15);
+            color: #81c784;
+        }
+
+        .status.recording {
+            background: rgba(239, 83, 80, 0.15);
+            color: #ef9a9a;
+            animation: pulse 1.4s infinite;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.6
+            }
+        }
+
+        .debug-info {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #777;
+            margin-bottom: 16px;
+        }
+
+        .transcription-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            min-height: 180px;
+            max-height: 380px;
+            overflow-y: auto;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #e0e0e0;
+        }
+
+        .transcription-box.empty {
+            color: #666;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chunk {
+            display: inline;
+            margin-right: 4px;
+        }
+
+        .chunk.new {
+            animation: highlight 0.6s;
+        }
+
+        @keyframes highlight {
+            0% {
+                background: #fbc02d33
+            }
+
+            100% {
+                background: transparent
+            }
+        }
+
+        .error-box {
+            background: rgba(239, 83, 80, 0.12);
+            color: #ef9a9a;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-top: 16px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-box.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Real-time Streaming STT</h1>
+        <p class="subtitle">Powered by Sarvam AI — saarika:v2.5</p>
+
+        <div id="status" class="status disconnected">Connecting…</div>
+        <div id="debugInfo" class="debug-info"></div>
+
+        <div class="controls">
+            <button id="recordBtn" class="record-btn" disabled onclick="startRecording()">Record</button>
+            <button id="stopBtn" class="stop-btn" disabled onclick="stopRecording()">Stop</button>
+        </div>
+
+        <div class="transcription-box empty" id="box">Transcription will appear here…</div>
+        <div id="error" class="error-box"></div>
+    </div>
+
+    <script>
+        const SAMPLE_RATE = 16000;
+        // Smaller chunk = lower latency. 4096 samples ≈ 256 ms at 16 kHz.
+        const CHUNK_SIZE = 4096;
+        // Flush interval in ms — triggers Sarvam to finalize partial transcripts.
+        const FLUSH_MS = 1200;
+
+        let ws = null, isRecording = false, audioCtx = null, recorder = null, flushTimer = null;
+
+        /* ---- WebSocket ---- */
+        function connect() {
+            ws = new WebSocket(`ws://${location.host}/ws`);
+            ws.onopen = () => {
+                setStatus('connected', 'Connected — Ready to record');
+                document.getElementById('recordBtn').disabled = false;
+            };
+            ws.onmessage = (e) => {
+                try {
+                    const d = JSON.parse(e.data);
+                    if (d.type === 'transcript' && d.text) appendText(d.text);
+                    else if (d.type === 'error') showError(d.message);
+                } catch (ex) { console.error('parse error', ex); }
+            };
+            ws.onerror = () => showError('WebSocket error');
+            ws.onclose = () => {
+                setStatus('disconnected', 'Disconnected');
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+            };
+        }
+
+        /* ---- Recording ---- */
+        async function startRecording() {
+            if (isRecording) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: SAMPLE_RATE,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    }
+                });
+
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+
+                // Log actual sample rate so the user can verify
+                const actualSR = audioCtx.sampleRate;
+                document.getElementById('debugInfo').textContent =
+                    `AudioContext sample rate: ${actualSR} Hz` +
+                    (actualSR !== SAMPLE_RATE ? ' ⚠️ mismatch!' : ' ✓');
+
+                const source = audioCtx.createMediaStreamSource(stream);
+                const processor = audioCtx.createScriptProcessor(CHUNK_SIZE, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+                    const float32 = e.inputBuffer.getChannelData(0);
+                    // Float32 → Int16 PCM
+                    const pcm = new Int16Array(float32.length);
+                    for (let i = 0; i < float32.length; i++) {
+                        const s = Math.max(-1, Math.min(1, float32[i]));
+                        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    // Send immediately — no client-side batching
+                    const u8 = new Uint8Array(pcm.buffer);
+                    let bin = '';
+                    for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+
+                    ws.send(JSON.stringify({
+                        type: 'audio',
+                        data: btoa(bin),
+                        sample_rate: actualSR,
+                    }));
+                };
+
+                source.connect(processor);
+                processor.connect(audioCtx.destination);
+                recorder = { stream, processor, source };
+                isRecording = true;
+
+                setStatus('recording', 'Recording — speak now');
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                const box = document.getElementById('box');
+                box.classList.remove('empty');
+                box.innerHTML = '';
+
+                ws.send(JSON.stringify({ type: 'start' }));
+
+                // Periodic flush — critical for getting partial transcripts
+                flushTimer = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN && isRecording) {
+                        ws.send(JSON.stringify({ type: 'flush' }));
+                    }
+                }, FLUSH_MS);
+
+            } catch (err) {
+                showError('Mic access failed: ' + err.message);
+            }
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+            isRecording = false;
+            clearInterval(flushTimer);
+            if (recorder) {
+                recorder.processor.disconnect();
+                recorder.source.disconnect();
+                recorder.stream.getTracks().forEach(t => t.stop());
+                audioCtx.close();
+                recorder = null;
+            }
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'stop' }));
+            }
+            setStatus('connected', 'Stopped — ready to record again');
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
+        /* ---- UI helpers ---- */
+        function appendText(text) {
+            const box = document.getElementById('box');
+            box.classList.remove('empty');
+            const span = document.createElement('span');
+            span.className = 'chunk new';
+            span.textContent = text + ' ';
+            box.appendChild(span);
+            box.scrollTop = box.scrollHeight;
+            setTimeout(() => span.classList.remove('new'), 600);
+        }
+
+        function setStatus(cls, msg) {
+            const el = document.getElementById('status');
+            el.className = 'status ' + cls;
+            el.textContent = msg;
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error');
+            el.textContent = 'Error: ' + msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 6000);
+        }
+
+        window.onload = connect;
+        window.onbeforeunload = () => { stopRecording(); ws && ws.close(); };
+    </script>
+</body>
+
+</html>
