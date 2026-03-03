@@ -8,6 +8,8 @@ A powerful Streamlit application that enables natural language question-answerin
 - **Source Referencing**: View source snippets for answer verification
 - **Configurable Parameters**: Customize chunk sizes, model settings, and behavior
 - **API Connection Testing**: Verify your Sarvam AI API credentials before processing
+
+For Demo: [Demo](https://sarvam-pdf-bot.streamlit.app/)
 ## 📋 Requirements
 ### Python Packages
 ```bash
