@@ -204,6 +204,23 @@ Validate env setup:
 .venv/bin/python check_setup.py --target core
 ```
 
+---
+
+<!-- codex:project-diagram:start -->
+
+## Project Diagram
+
+```mermaid
+flowchart LR
+    A["Browser"] --> B["Frontend App"]
+    B --> C["API / Serverless"]
+    C --> D["Deploy"]
+```
+
+_High-level flow of the deployed web experience and supporting services._
+
+<!-- codex:project-diagram:end -->
+
 ## Contributing
 
 Please read [CONTRIBUTING.MD](./CONTRIBUTING.MD).
