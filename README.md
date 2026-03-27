@@ -1,39 +1,16 @@
-<div align="center">
-
 # Sarvam AI Cookbook
 
-### Enterprise-grade Sarvam AI reference implementations for India-first products.
+[![CI](https://github.com/mangeshraut712/sarvam-ai-cookbook/actions/workflows/ci.yml/badge.svg)](https://github.com/mangeshraut712/sarvam-ai-cookbook/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![Node.js](https://img.shields.io/badge/node.js-20%2B-green)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://docker.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-sarvam--ai--cookbook.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://sarvam-ai-cookbook.vercel.app)
-[![CI](https://img.shields.io/badge/CI-passing-22c55e?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/mangeshraut712/sarvam-ai-cookbook/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com/)
-[![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+## Live Demo
 
-</div>
+**Try the showcase now:** https://sarvam-ai-cookbook.vercel.app
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Live Demo](#live-demo)
-- [Main Apps](#main-apps)
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Environment Variables](#environment-variables)
-- [Quick Start](#quick-start)
-- [Scripts](#scripts)
-- [Run Locally](#run-locally)
-- [Deployment](#deployment)
-- [Quality, CI, and Security](#quality-ci-and-security)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-
----
+This is the fastest way to explore the project in production before running anything locally.
 
 ## Overview
 
@@ -44,12 +21,6 @@ It includes:
 - FastAPI and Python examples
 - Speech, translation, chat, and content workflows
 - CI security scanning and quality checks
-
-## Live Demo
-
-**Try the showcase now:** https://sarvam-ai-cookbook.vercel.app
-
-This is the fastest way to explore the project in production before running anything locally.
 
 ## Main Apps
 
@@ -117,23 +88,6 @@ cd sarvam-ai-cookbook
 make install
 .venv/bin/python check_setup.py --target core
 ```
-
-## Scripts
-
-| Command | Purpose |
-| --- | --- |
-| `make install` | Create the virtualenv and install Python dependencies |
-| `make format` | Format code with `black` and `isort` |
-| `make lint` | Run `flake8` and `mypy` checks |
-| `make test` | Run the pytest suite |
-| `make check` | Run format checks, linting, tests, and compile checks |
-| `make check-all` | Full validation including coverage and mypy |
-| `make verify-setup` | Validate the core local environment |
-| `make verify-showcase` | Validate the showcase deployment environment |
-| `make verify-podcast` | Validate the podcast deployment environment |
-| `make verify-web-showcase` | Lint and build the showcase web app |
-| `make verify-web-podcast` | Lint and build the podcast web app |
-| `make verify-all` | Full release verification |
 
 ## Run Locally
 
@@ -257,8 +211,3 @@ Please read [CONTRIBUTING.MD](./CONTRIBUTING.MD).
 ## License
 
 MIT. See [LICENSE](./LICENSE).
-
-## Contact
-
-- GitHub issues: https://github.com/mangeshraut712/sarvam-ai-cookbook/issues
-- Live showcase: https://sarvam-ai-cookbook.vercel.app
