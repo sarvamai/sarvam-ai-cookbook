@@ -7,7 +7,6 @@ from typing import Optional, List, Dict, Any
 import time
 from pathlib import Path
 
-# Import LlamaIndex components (these are available on PyPI)
 try:
     from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
     from llama_index.core.node_parser import SimpleNodeParser
@@ -20,18 +19,15 @@ try:
     import llama_index.core
 except ImportError as e:
     st.error(f"Import error: {e}")
-    st.info("Please install the required packages from requirements.txt")
+    st.info("Install packages from requirements.txt")
 
-# Page configuration
 st.set_page_config(
     page_title="PDF Q&A with Sarvam AI",
-    page_icon="📚",
+    page_icon="",
     layout="wide"
 )
 
-# Custom Sarvam LLM class for LlamaIndex
 class SarvamLLM(LLM):
-    """Custom LLM class for Sarvam AI API"""
     
     @property
     def metadata(self) -> LLMMetadata:
@@ -48,14 +44,12 @@ class SarvamLLM(LLM):
         self.model = "sarvam-m"
     
     def complete(self, prompt: str, **kwargs) -> CompletionResponse:
-        """Complete a prompt using Sarvam AI API"""
         try:
             headers = {
                 "Content-Type": "application/json",
                 "api-subscription-key": self.api_key
             }
             
-            # Sarvam AI API payload
             payload = {
                 "model": self.model,
                 "prompt": prompt,
@@ -65,7 +59,6 @@ class SarvamLLM(LLM):
                 "stream": False
             }
             
-            # Make API call
             response = requests.post(
                 f"{self.base_url}/llm/completion",
                 headers=headers,
@@ -96,10 +89,8 @@ class SarvamLLM(LLM):
             return CompletionResponse(text=f"Error: {error_msg}")
     
     def stream_complete(self, prompt: str, **kwargs):
-        """Stream completion (not implemented)"""
-        raise NotImplementedError("Streaming not implemented for Sarvam LLM")
+        raise NotImplementedError("Streaming not implemented")
 
-# Initialize session state
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
 if 'index' not in st.session_state:
@@ -114,7 +105,6 @@ if 'base_url' not in st.session_state:
     st.session_state.base_url = "https://api.sarvam.ai"
 
 def save_uploaded_files(uploaded_files):
-    """Save uploaded files to temporary directory"""
     saved_paths = []
     temp_dir = tempfile.mkdtemp()
     
@@ -127,7 +117,6 @@ def save_uploaded_files(uploaded_files):
     return saved_paths, temp_dir
 
 def test_sarvam_api(api_key: str, base_url: str) -> bool:
-    """Test if Sarvam API is accessible"""
     try:
         headers = {
             "Content-Type": "application/json",
@@ -152,46 +141,36 @@ def test_sarvam_api(api_key: str, base_url: str) -> bool:
         return False
 
 def process_documents(file_paths, api_key, base_url, context_window=4500, max_tokens=512, chunk_size=1024):
-    """Process uploaded PDF documents and create index"""
     try:
-        # Test API connection first
         with st.spinner("Testing API connection..."):
             if not test_sarvam_api(api_key, base_url):
-                st.error("❌ Failed to connect to Sarvam API. Please check your API key and base URL.")
+                st.error("Failed to connect to Sarvam API. Check your API key and base URL.")
                 return False
-            st.success("✅ API connection successful!")
+            st.success("API connection successful")
         
-        # Initialize Sarvam LLM
         llm = SarvamLLM(api_key=api_key, base_url=base_url)
-        
-        # Initialize embedding model
         embed_model = FastEmbedEmbedding(model_name="BAAI/bge-small-en-v1.5")
         
-        # Configure settings
         Settings.llm = llm
         Settings.embed_model = embed_model
         Settings.chunk_size = chunk_size
         Settings.chunk_overlap = 200
         
-        # Load documents
         with st.spinner("Loading and processing documents..."):
             documents = SimpleDirectoryReader(input_files=file_paths).load_data()
-            st.success(f"✅ Loaded {len(documents)} document chunks")
+            st.success(f"Loaded {len(documents)} document chunks")
         
-        # Create index
         with st.spinner("Creating search index..."):
             index = VectorStoreIndex.from_documents(
                 documents,
                 show_progress=True
             )
             
-            # Create query engine
             query_engine = index.as_query_engine(
                 similarity_top_k=3,
                 response_mode="compact"
             )
             
-            # Store in session state
             st.session_state.index = index
             st.session_state.query_engine = query_engine
             st.session_state.processing_complete = True
@@ -199,24 +178,18 @@ def process_documents(file_paths, api_key, base_url, context_window=4500, max_to
         return True
         
     except Exception as e:
-        st.error(f"❌ Error processing documents: {str(e)}")
+        st.error(f"Error processing documents: {str(e)}")
         return False
 
 def main():
-    # Title and description
-    st.title("📚 PDF Q&A with Sarvam AI")
-    st.markdown("""
-    Upload your PDF documents and ask questions about their content using Sarvam AI. 
-                
-    """)
-    st.markdown("Go to [Sarvam AI Dashboard](https://dashboard.sarvam.ai/key-management), make an account, get 1000 free credits, and enjoy.")
+    st.title("PDF Q&A with Sarvam AI")
+    st.markdown("Upload PDF documents and ask questions about their content using Sarvam AI.")
+    st.markdown("Go to Sarvam AI Dashboard, make an account, get 1000 free credits.")
 
     
-    # Sidebar for configuration
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.header("Configuration")
         
-        # API Key input
         api_key = st.text_input(
             "Sarvam API Key",
             type="password",
@@ -227,7 +200,6 @@ def main():
         if api_key:
             st.session_state.api_key = api_key
         
-        # Base URL input
         base_url = st.text_input(
             "Sarvam API Base URL",
             value=st.session_state.base_url,
@@ -235,18 +207,16 @@ def main():
         )
         st.session_state.base_url = base_url
         
-        # Test API button
         if api_key and base_url:
-            if st.button("🔗 Test API Connection", type="secondary"):
+            if st.button("Test API Connection", type="secondary"):
                 with st.spinner("Testing connection..."):
                     if test_sarvam_api(api_key, base_url):
-                        st.success("✅ API connection successful!")
+                        st.success("API connection successful")
                     else:
-                        st.error("❌ Failed to connect to API")
+                        st.error("Failed to connect to API")
         
         st.divider()
         
-        # Model settings
         st.subheader("Model Settings")
         
         context_window = st.slider(
@@ -278,34 +248,27 @@ def main():
         
         st.divider()
         
-        # System prompt
         st.subheader("Assistant Behavior")
         system_prompt = st.text_area(
             "System Prompt",
-            value="""You are a helpful Q&A assistant. Answer questions based only on the provided documents. 
-If the answer is not in the documents, say "I cannot find this information in the provided documents."
-Provide clear, concise answers with relevant details from the documents.""",
+            value="You are a helpful Q&A assistant. Answer questions based only on the provided documents. If the answer is not in the documents, say 'I cannot find this information in the provided documents.' Provide clear, concise answers with relevant details from the documents.",
             height=150
         )
         
-        # Store in session state for query engine
         st.session_state.system_prompt = system_prompt
         
         st.divider()
         
-        # Clear session button
-        if st.button("🔄 Clear Session", type="secondary", use_container_width=True):
+        if st.button("Clear Session", type="secondary", use_container_width=True):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
     
-    # Main content area
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.header("📤 Upload Documents")
+        st.header("Upload Documents")
         
-        # File uploader
         uploaded_files = st.file_uploader(
             "Choose PDF files",
             type=['pdf'],
@@ -315,18 +278,15 @@ Provide clear, concise answers with relevant details from the documents.""",
         
         if uploaded_files:
             st.session_state.uploaded_files = uploaded_files
-            st.write(f"**Selected files:**")
+            st.write("Selected files:")
             for file in uploaded_files:
                 st.write(f"- {file.name} ({file.size / 1024:.1f} KB)")
         
-        # Process button
         if st.session_state.uploaded_files and st.session_state.api_key:
-            if st.button("🚀 Process Documents", type="primary", use_container_width=True):
+            if st.button("Process Documents", type="primary", use_container_width=True):
                 with st.spinner("Processing documents..."):
-                    # Save files temporarily
                     file_paths, temp_dir = save_uploaded_files(st.session_state.uploaded_files)
                     
-                    # Process documents
                     success = process_documents(
                         file_paths, 
                         st.session_state.api_key,
@@ -337,33 +297,31 @@ Provide clear, concise answers with relevant details from the documents.""",
                     )
                     
                     if success:
-                        st.success("✅ Documents processed successfully! You can now ask questions.")
+                        st.success("Documents processed successfully. You can now ask questions.")
                     else:
-                        st.error("❌ Failed to process documents")
+                        st.error("Failed to process documents")
         
         elif st.session_state.uploaded_files and not st.session_state.api_key:
-            st.warning("⚠️ Please enter your Sarvam API key in the sidebar")
+            st.warning("Please enter your Sarvam API key in the sidebar")
     
     with col2:
-        st.header("💬 Ask Questions")
+        st.header("Ask Questions")
         
         if st.session_state.processing_complete:
-            # Question input
             question = st.text_input(
                 "Enter your question:",
                 placeholder="e.g., What are the main findings of this document?",
                 help="Ask anything about your uploaded documents"
             )
             
-            # Advanced options
-            with st.expander("⚡ Advanced Options"):
+            with st.expander("Advanced Options"):
                 temperature = st.slider(
                     "Temperature",
                     min_value=0.0,
                     max_value=1.0,
                     value=0.1,
                     step=0.05,
-                    help="Controls randomness (0 = deterministic)"
+                    help="Controls randomness. 0 = deterministic"
                 )
                 
                 top_k = st.slider(
@@ -375,46 +333,40 @@ Provide clear, concise answers with relevant details from the documents.""",
                 )
             
             if question:
-                if st.button("🔍 Get Answer", type="primary", use_container_width=True):
-                    with st.spinner("Thinking..."):
+                if st.button("Get Answer", type="primary", use_container_width=True):
+                    with st.spinner("Processing..."):
                         try:
-                            # Update query engine with new settings
                             st.session_state.query_engine = st.session_state.index.as_query_engine(
                                 similarity_top_k=top_k,
                                 response_mode="compact"
                             )
                             
-                            # Add system prompt to question
                             enhanced_question = f"{st.session_state.system_prompt}\n\nQuestion: {question}"
                             
-                            # Get response
                             response = st.session_state.query_engine.query(enhanced_question)
                             
-                            # Display response
-                            st.subheader("📝 Answer:")
+                            st.subheader("Answer:")
                             st.write(str(response))
                             
-                            # Show sources if available
                             if hasattr(response, 'source_nodes') and response.source_nodes:
-                                with st.expander("📄 View Sources"):
+                                with st.expander("View Sources"):
                                     for i, node in enumerate(response.source_nodes[:3]):
-                                        st.write(f"**Source {i+1}:**")
+                                        st.write(f"Source {i+1}:")
                                         st.text(node.text[:300] + "..." if len(node.text) > 300 else node.text)
                                         st.divider()
                             
                         except Exception as e:
-                            st.error(f"❌ Error getting answer: {str(e)}")
+                            st.error(f"Error getting answer: {str(e)}")
         else:
-            st.info("👈 Upload PDFs and enter your API key to start also adjust parameters for longer or shorter answers.")
+            st.info("Upload PDFs and enter your API key to start. Adjust parameters for longer or shorter answers.")
     
-    # Footer
     st.divider()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown(
             """
             <div style='text-align: center; padding: 20px;'>
-                <p style='color: #666;'>Built with ❤️ using Sarvam AI and Streamlit</p>
+                <p style='color: #666;'>Built with Sarvam AI and Streamlit</p>
                 <p style='color: #888; font-size: 0.9em;'>Upload PDFs • Ask Questions • Get Answers</p>
             </div>
             """,
