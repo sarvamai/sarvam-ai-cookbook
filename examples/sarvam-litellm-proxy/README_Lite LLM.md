@@ -5,7 +5,7 @@ Run a local [LiteLLM](https://github.com/BerriAI/litellm) proxy that exposes Sar
 This folder has two walkthroughs:
 
 1. **Below** — stand up the proxy and validate it with `curl` and the OpenAI Python SDK.
-2. **[OPEN_INTERPRETER.md](OPEN_INTERPRETER.md)** — wire [Open Interpreter](https://github.com/OpenInterpreter/open-interpreter) on top of the same proxy to get a natural-language CLI driven by Sarvam.
+2. **[README_Open Interpreter.md](README_Open Interpreter.md)** — wire [Open Interpreter](https://github.com/OpenInterpreter/open-interpreter) on top of the same proxy to get a natural-language CLI driven by Sarvam.
 
 Start here. Once the proxy is up and the SDK demo returns a response, move on to the Open Interpreter guide if you want it.
 
@@ -99,7 +99,7 @@ Expected: a short reply that includes a Tamil greeting like `வணக்கம�
 
 ## Next: Open Interpreter
 
-With the proxy validated, follow **[OPEN_INTERPRETER.md](OPEN_INTERPRETER.md)** to wire [Open Interpreter](https://github.com/OpenInterpreter/open-interpreter) on top of it.
+With the proxy validated, follow **[README_Open Interpreter.md](README_Open Interpreter.md)** to wire [Open Interpreter](https://github.com/OpenInterpreter/open-interpreter) on top of it.
 
 ## Note on `<think>` blocks
 
