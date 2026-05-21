@@ -87,7 +87,7 @@ Before you add an example, please make sure that it is not already covered by an
 
 If you want to add an example, please follow these steps:
 - Fork the repository and commit your changes.
-- Document your example in a seperate `README.md` file within your example's directory. 
+- Document your example in a separate `README.md` file within your example's directory. 
 - Test your example before submitting a pull request.
 - Ensure it is not a duplicate or a derivative of an existing example.
 - Open a [Pull Request](https://github.com/sarvamai/sarvam-ai-cookbook/pulls) with a clear title and description of what your changes do. Make sure to reference the issue that your example solves, if applicable.
