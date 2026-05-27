@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Languages, Loader2, AlertCircle, ClipboardCopy, CheckCircle2, ArrowRight } from "lucide-react";
+import { Languages, Loader2, ClipboardCopy, CheckCircle2, ArrowRight } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import type { LanguageCode, TransliterateApiResponse } from "@/lib/types";
 
-type TransliterateState = "idle" | "loading" | "done" | "error";
+type State = "idle" | "loading" | "done" | "error";
 
-// Sample hints for different target languages
-const SAMPLE_TEXTS: Record<string, string> = {
+const SAMPLES: Partial<Record<LanguageCode, string>> = {
   "hi-IN": "namaste, aap kaise hain?",
   "ta-IN": "vanakkam, neenga eppadi irukkeenga?",
   "te-IN": "namaskaram, meeru ela unnaru?",
@@ -22,165 +21,152 @@ const SAMPLE_TEXTS: Record<string, string> = {
 
 export function TransliteratePanel() {
   const [text, setText] = useState("");
-  const [sourceLanguage] = useState<LanguageCode>("en-IN"); // always Roman input
   const [targetLanguage, setTargetLanguage] = useState<LanguageCode>("hi-IN");
-  const [state, setTransliterateState] = useState<TransliterateState>("idle");
+  const [state, setState] = useState<State>("idle");
   const [result, setResult] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
 
   const handleTransliterate = useCallback(async () => {
     if (!text.trim()) return;
-
-    setTransliterateState("loading");
-    setErrorMsg("");
-    setResult("");
+    setState("loading"); setErrorMsg(""); setResult("");
 
     try {
-      const res = await fetch("/api/transliterate", {
+      const res  = await fetch("/api/transliterate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: text.trim(),
-          sourceLanguage,
-          targetLanguage,
-        }),
+        body: JSON.stringify({ text: text.trim(), sourceLanguage: "en-IN", targetLanguage }),
       });
-
       const data: TransliterateApiResponse = await res.json();
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
       setResult(data.transliterated_text ?? "");
-      setTransliterateState("done");
+      setState("done");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Transliteration failed");
-      setTransliterateState("error");
+      setErrorMsg(err instanceof Error ? err.message : "Failed");
+      setState("error");
     }
-  }, [text, sourceLanguage, targetLanguage]);
+  }, [text, targetLanguage]);
 
   const loadSample = useCallback(() => {
-    const sample = SAMPLE_TEXTS[targetLanguage] ?? SAMPLE_TEXTS["hi-IN"];
-    setText(sample);
-    setResult("");
-    setTransliterateState("idle");
+    const s = SAMPLES[targetLanguage] ?? SAMPLES["hi-IN"]!;
+    setText(s); setResult(""); setState("idle");
   }, [targetLanguage]);
 
   const copyResult = useCallback(async () => {
     await navigator.clipboard.writeText(result);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
   }, [result]);
 
   return (
-    <div className="space-y-5">
-      {/* Language config row */}
-      <div className="flex items-end gap-3">
-        {/* Source is always "English (Romanised)" */}
-        <div className="flex-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-            Source (Romanised)
-          </label>
-          <div className="px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-default">
-            🇬🇧 English — Romanised input
-          </div>
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[420px]">
 
-        <ArrowRight className="w-5 h-5 text-slate-400 mb-2.5 shrink-0" />
-
-        <LanguageSelector
-          value={targetLanguage}
-          onChange={(lang) => {
-            setTargetLanguage(lang);
-            setResult("");
-            setTransliterateState("idle");
-          }}
-          label="Target Script"
-          id="transliterate-target"
-          className="flex-1"
-        />
-      </div>
-
-      {/* Input area */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+      {/* ── Left: Roman input ── */}
+      <div className="flex flex-col p-6 border-b lg:border-b-0 lg:border-r border-[#E5E3EE]">
+        <div className="flex items-center justify-between mb-5">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#9CA3AF]">
             Romanised Input
-          </label>
+          </span>
           <button
             onClick={loadSample}
-            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+            className="text-xs text-[#6B7280] hover:text-[#111827] transition-colors font-medium"
           >
-            Load sample
+            Load sample →
           </button>
         </div>
+
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type Roman text here…&#10;e.g. namaste, aap kaise hain?"
-          rows={3}
-          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800
-                     placeholder:text-slate-400 resize-none
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                     transition-colors"
+          placeholder={`Type romanised text…\ne.g. ${SAMPLES[targetLanguage] ?? SAMPLES["hi-IN"]}`}
+          rows={7}
+          className="flex-1 w-full bg-transparent text-[#111827] text-base leading-relaxed
+                     placeholder:text-[#C4BFDA] resize-none focus:outline-none"
         />
+
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between pt-4 mt-auto border-t border-[#E5E3EE]">
+          {/* Source language label */}
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-2 text-sm text-[#9CA3AF] bg-[#F9F8FC] rounded-full border border-[#E5E3EE] font-medium">
+              English (Roman)
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#C4BFDA]" />
+            <LanguageSelector
+              value={targetLanguage}
+              onChange={(l) => { setTargetLanguage(l); setResult(""); setState("idle"); }}
+              id="transliterate-target"
+            />
+          </div>
+
+          <button
+            onClick={handleTransliterate}
+            disabled={!text.trim() || state === "loading"}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#1F2937]
+                       disabled:bg-[#E5E3EE] disabled:text-[#9CA3AF] disabled:cursor-not-allowed
+                       text-white text-sm font-medium rounded-full transition-colors"
+          >
+            {state === "loading" ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Converting…</>
+            ) : (
+              <><Languages className="w-4 h-4" /> Convert</>
+            )}
+          </button>
+        </div>
+
+        {state === "error" && errorMsg && (
+          <p className="mt-2 text-xs text-red-500">{errorMsg}</p>
+        )}
       </div>
 
-      {/* Transliterate button */}
-      <button
-        onClick={handleTransliterate}
-        disabled={!text.trim() || state === "loading"}
-        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700
-                   disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed
-                   text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-      >
-        {state === "loading" ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Transliterating…
-          </>
-        ) : (
-          <>
-            <Languages className="w-4 h-4" />
-            Transliterate
-          </>
-        )}
-      </button>
-
-      {/* Error */}
-      {state === "error" && errorMsg && (
-        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      {/* Result */}
-      {state === "done" && (
-        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
-              Transliterated
-            </span>
+      {/* ── Right: native script output ── */}
+      <div className="flex flex-col p-6">
+        <div className="flex items-center justify-between mb-5">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#9CA3AF]">
+            Native Script
+          </span>
+          {state === "done" && result && (
             <button
               onClick={copyResult}
-              className="flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-600 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-[#6B7280] hover:text-[#111827] transition-colors"
             >
-              {copied ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-              ) : (
-                <ClipboardCopy className="w-3.5 h-3.5" />
-              )}
-              {copied ? "Copied!" : "Copy"}
+              {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <ClipboardCopy className="w-3.5 h-3.5" />}
+              {copied ? "Copied" : "Copy"}
             </button>
+          )}
+        </div>
+
+        {state === "idle" && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#F5F3FF] flex items-center justify-center mx-auto">
+                <Languages className="w-5 h-5 text-[#9CA3AF]" />
+              </div>
+              <p className="text-sm text-[#9CA3AF]">Transliterated text will appear here</p>
+            </div>
           </div>
-          <p className="text-xl font-medium text-slate-800 leading-relaxed">
-            {result || <em className="text-slate-400 text-sm">No output returned.</em>}
+        )}
+
+        {state === "loading" && (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-[#9CA3AF] animate-spin" />
+          </div>
+        )}
+
+        {state === "done" && (
+          <div className="flex-1 p-4 bg-[#F9F8FC] rounded-2xl border border-[#E5E3EE]">
+            <p className="text-2xl text-[#111827] leading-relaxed font-medium">
+              {result || <em className="text-[#9CA3AF] text-base not-italic">No output returned.</em>}
+            </p>
+          </div>
+        )}
+
+        {/* Model badge */}
+        <div className="mt-auto pt-4 border-t border-[#E5E3EE]">
+          <p className="text-xs text-[#9CA3AF]">
+            Powered by <span className="text-[#6B7280] font-medium">Sarvam Transliterate</span>
           </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }

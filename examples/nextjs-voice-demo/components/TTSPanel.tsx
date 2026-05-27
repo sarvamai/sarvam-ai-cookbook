@@ -1,34 +1,44 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Volume2, Play, Square, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Play, Square, Loader2 } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import { TTS_SPEAKERS, MAX_TTS_CHARS } from "@/lib/constants";
 import type { LanguageCode, TTSSpeaker, TTSApiResponse } from "@/lib/types";
 
 type Status = "idle" | "loading" | "playing" | "done" | "error";
 
+// Sarvam voice colours — matches their website cards
+const VOICE_COLORS: Record<TTSSpeaker, string> = {
+  priya: "bg-[#C084FC]",   // purple
+  shubh: "bg-[#60A5FA]",   // blue
+};
+
+const VOICE_ICONS: Record<TTSSpeaker, string> = {
+  priya: "P",
+  shubh: "S",
+};
+
 export function TTSPanel() {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(
+    "भारत की सुबह का नज़ारा ही कुछ और होता है। चाय की चुस्की के साथ अखबार।"
+  );
   const [language, setLanguage] = useState<LanguageCode>("hi-IN");
-  const [speaker, setSpeaker] = useState<TTSSpeaker>("priya");
+  const [speaker, setSpeaker] = useState<TTSSpeaker>("shubh");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const charsRemaining = MAX_TTS_CHARS - text.length;
-  const isOverLimit = text.length > MAX_TTS_CHARS;
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const charCount = text.length;
+  const isOverLimit = charCount > MAX_TTS_CHARS;
 
   const handleGenerate = useCallback(async () => {
     if (!text.trim() || isOverLimit) return;
-
     setStatus("loading");
     setErrorMsg("");
-    setAudioSrc(null);
 
-    // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -40,32 +50,20 @@ export function TTSPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: text.trim(), language, speaker }),
       });
-
       const data: TTSApiResponse = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+      if (!data.audioBase64) throw new Error("No audio received");
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-
-      if (!data.audioBase64) {
-        throw new Error("No audio data received");
-      }
-
-      // Decode base64 WAV and create an object URL
       const bytes = Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: "audio/wav" });
       const url = URL.createObjectURL(blob);
       setAudioSrc(url);
       setStatus("playing");
 
-      // Auto-play
       const audio = new Audio(url);
       audioRef.current = audio;
       audio.onended = () => setStatus("done");
-      audio.onerror = () => {
-        setErrorMsg("Failed to play audio");
-        setStatus("error");
-      };
+      audio.onerror = () => { setErrorMsg("Playback failed"); setStatus("error"); };
       await audio.play();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
@@ -74,147 +72,128 @@ export function TTSPanel() {
   }, [text, language, speaker, isOverLimit]);
 
   const handleStop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
-    }
+    audioRef.current?.pause();
+    audioRef.current = null;
     setStatus("done");
   }, []);
 
   return (
-    <div className="space-y-5">
-      {/* Text input */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Input Text
-          </label>
-          <span
-            className={`text-xs font-medium tabular-nums ${
-              isOverLimit ? "text-red-500" : charsRemaining <= 50 ? "text-amber-500" : "text-slate-400"
-            }`}
-          >
-            {charsRemaining} chars left
-          </span>
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-0 min-h-[420px]">
+
+      {/* ── Left: text input ── */}
+      <div className="flex flex-col p-6 border-b lg:border-b-0 lg:border-r border-[#E5E3EE]">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type something in the selected language…&#10;e.g. नमस्ते, आप कैसे हैं?"
-          rows={4}
-          className={`w-full px-3 py-2.5 bg-white border rounded-lg text-sm text-slate-800
-                      placeholder:text-slate-400 resize-none
-                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                      transition-colors ${
-                        isOverLimit ? "border-red-400 bg-red-50" : "border-slate-200"
-                      }`}
-        />
-      </div>
-
-      {/* Controls row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <LanguageSelector
-          value={language}
-          onChange={setLanguage}
-          label="Target Language"
-          id="tts-language"
+          placeholder="Type text to convert to speech…"
+          className={`flex-1 w-full bg-transparent text-[#111827] text-base leading-relaxed
+                      placeholder:text-[#C4BFDA] resize-none focus:outline-none
+                      ${isOverLimit ? "text-red-500" : ""}`}
+          rows={8}
         />
 
-        {/* Voice selector */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-            Voice
-          </label>
-          <div className="flex gap-2">
-            {TTS_SPEAKERS.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setSpeaker(s.value)}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-all ${
-                  speaker === s.value
-                    ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                    : "bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:text-indigo-600"
-                }`}
-              >
-                {s.label}
-                <span className="block text-xs font-normal opacity-70">{s.description}</span>
-              </button>
-            ))}
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between pt-4 mt-auto">
+          <div className="flex items-center gap-4">
+            <LanguageSelector value={language} onChange={setLanguage} id="tts-language" />
           </div>
-        </div>
-      </div>
 
-      {/* Generate / Stop button */}
-      <div className="flex items-center gap-3">
-        {status === "playing" ? (
-          <button
-            onClick={handleStop}
-            className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600
-                       text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-          >
-            <Square className="w-4 h-4 fill-current" />
-            Stop
-          </button>
-        ) : (
-          <button
-            onClick={handleGenerate}
-            disabled={status === "loading" || !text.trim() || isOverLimit}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700
-                       disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed
-                       text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-          >
-            {status === "loading" ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Volume2 className="w-4 h-4" />
-                Generate Speech
-              </>
-            )}
-          </button>
-        )}
-
-        {/* Status badge */}
-        {status === "playing" && (
-          <div className="flex items-center gap-2 text-indigo-600 text-sm font-medium">
-            <span className="flex gap-0.5 h-4 items-end">
-              {[...Array(5)].map((_, i) => (
-                <span
-                  key={i}
-                  className="waveform-bar w-1 bg-indigo-500 rounded-full"
-                  style={{ height: "100%" }}
-                />
-              ))}
+          <div className="flex items-center gap-3">
+            <span className={`text-xs tabular-nums ${isOverLimit ? "text-red-500 font-medium" : "text-[#9CA3AF]"}`}>
+              {charCount}/{MAX_TTS_CHARS}
             </span>
-            Playing…
+
+            {status === "playing" ? (
+              <button
+                onClick={handleStop}
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600
+                           text-white text-sm font-medium rounded-full transition-colors"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={status === "loading" || !text.trim() || isOverLimit}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#1F2937]
+                           disabled:bg-[#E5E3EE] disabled:text-[#9CA3AF] disabled:cursor-not-allowed
+                           text-white text-sm font-medium rounded-full transition-colors"
+              >
+                {status === "loading" ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
+                ) : (
+                  <><Play className="w-3.5 h-3.5 fill-current" /> Speak</>
+                )}
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Error */}
+        {status === "error" && errorMsg && (
+          <p className="mt-3 text-xs text-red-500">{errorMsg}</p>
         )}
-        {status === "done" && (
-          <span className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
-            <CheckCircle2 className="w-4 h-4" /> Done
-          </span>
+
+        {/* Audio replay */}
+        {audioSrc && (status === "done" || status === "error") && (
+          <audio controls src={audioSrc} className="mt-3 w-full h-9" />
         )}
       </div>
 
-      {/* Error message */}
-      {status === "error" && errorMsg && (
-        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{errorMsg}</span>
+      {/* ── Right: voice selection ── */}
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#9CA3AF]">
+            Voices
+          </span>
         </div>
-      )}
 
-      {/* Replay controls (shown after playback finishes) */}
-      {audioSrc && (status === "done" || status === "error") && (
-        <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-          <Play className="w-4 h-4 text-slate-500 shrink-0" />
-          <audio controls src={audioSrc} className="w-full h-8" />
+        <div className="space-y-2">
+          {TTS_SPEAKERS.map((v) => (
+            <button
+              key={v.value}
+              onClick={() => setSpeaker(v.value)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all
+                ${speaker === v.value
+                  ? "bg-[#F5F3FF] ring-1 ring-[#111827]/10"
+                  : "hover:bg-[#F9F8FC]"
+                }`}
+            >
+              {/* Coloured icon */}
+              <div className={`w-10 h-10 rounded-xl ${VOICE_COLORS[v.value]} flex items-center justify-center shrink-0`}>
+                <Play className="w-4 h-4 fill-white text-white" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#111827]">{v.label}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium
+                    ${v.value === "priya"
+                      ? "bg-[#FCE7F3] text-[#BE185D]"
+                      : "bg-[#DBEAFE] text-[#1D4ED8]"
+                    }`}>
+                    {v.value === "priya" ? "Female" : "Male"}
+                  </span>
+                </div>
+                <p className="text-xs text-[#9CA3AF] mt-0.5">{v.description}</p>
+              </div>
+
+              {speaker === v.value && (
+                <div className="w-2 h-2 rounded-full bg-[#111827] shrink-0" />
+              )}
+            </button>
+          ))}
         </div>
-      )}
+
+        {/* Model badge */}
+        <div className="mt-6 pt-4 border-t border-[#E5E3EE]">
+          <p className="text-xs text-[#9CA3AF]">
+            Powered by{" "}
+            <span className="text-[#6B7280] font-medium">Bulbul v3</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
