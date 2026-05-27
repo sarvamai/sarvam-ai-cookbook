@@ -143,7 +143,7 @@ export function STTPanel() {
         </p>
 
         {/* Microphone card */}
-        <div className="flex-1 space-y-3">
+        <div id="onboard-stt-input" className="flex-1 space-y-3">
           <div className="p-4 rounded-2xl bg-[#F9F8FC] border border-[#E5E3EE]">
             <p className="text-xs text-[#9CA3AF] mb-3">Record from microphone</p>
 
@@ -224,6 +224,7 @@ export function STTPanel() {
           <LanguageSelector value={language} onChange={setLanguage} id="stt-language" />
 
           <button
+            id="onboard-transcribe-btn"
             onClick={handleTranscribe}
             disabled={!hasAudio || transcribeState === "loading"}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#1F2937]

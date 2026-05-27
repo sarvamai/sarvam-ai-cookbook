@@ -75,6 +75,7 @@ export function TransliteratePanel() {
         </div>
 
         <textarea
+          id="onboard-transliterate-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={`Type romanised text…\ne.g. ${SAMPLES[targetLanguage] ?? SAMPLES["hi-IN"]}`}
@@ -99,6 +100,7 @@ export function TransliteratePanel() {
           </div>
 
           <button
+            id="onboard-convert-btn"
             onClick={handleTransliterate}
             disabled={!text.trim() || state === "loading"}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#1F2937]
