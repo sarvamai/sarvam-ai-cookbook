@@ -46,3 +46,6 @@ next-env.d.ts
 
 # build artifacts
 .next/
+
+# Override root repo's lib/ ignore — this project's lib/ is source code, not a Python venv
+!lib/
