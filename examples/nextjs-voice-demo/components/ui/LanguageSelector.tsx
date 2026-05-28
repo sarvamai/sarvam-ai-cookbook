@@ -1,34 +1,32 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { LANGUAGES } from "@/lib/constants";
 import type { LanguageCode } from "@/lib/types";
-import { ChevronDown } from "lucide-react";
 
 interface LanguageSelectorProps {
-  value: LanguageCode;
-  onChange: (lang: LanguageCode) => void;
-  id?: string;
+  value:     LanguageCode;
+  onChange:  (lang: LanguageCode) => void;
+  id?:       string;
   className?: string;
 }
 
 export function LanguageSelector({
   value,
   onChange,
-  id = "language-select",
+  id        = "language-select",
   className = "",
 }: LanguageSelectorProps) {
-  const selected = LANGUAGES.find((l) => l.code === value);
-
   return (
     <div className={`relative inline-flex items-center ${className}`}>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value as LanguageCode)}
-        className="appearance-none pl-4 pr-9 py-2 bg-white border border-[#DDD9EC] rounded-full
-                   text-sm font-medium text-[#111827] cursor-pointer
-                   focus:outline-none focus:ring-2 focus:ring-[#111827]/20
-                   hover:border-[#111827]/30 transition-colors"
+        className="appearance-none pl-4 pr-9 py-2 bg-white border border-slate-200 rounded-full
+                   text-sm font-medium text-slate-700 cursor-pointer
+                   focus:outline-none focus:ring-2 focus:ring-indigo-200
+                   hover:border-slate-300 transition-colors"
       >
         {LANGUAGES.map((lang) => (
           <option key={lang.code} value={lang.code}>
@@ -36,7 +34,7 @@ export function LanguageSelector({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-3 w-3.5 h-3.5 text-[#6B7280]" />
+      <ChevronDown className="pointer-events-none absolute right-3 w-3.5 h-3.5 text-slate-400" />
     </div>
   );
 }

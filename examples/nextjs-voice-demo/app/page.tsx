@@ -1,4 +1,4 @@
-import { VoiceDemo } from "@/components/VoiceDemo";
+import { VoiceDemo } from "@/components/layout/VoiceDemo";
 
 export default function Home() {
   return (
