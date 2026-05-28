@@ -91,7 +91,7 @@ export function TTSPanel() {
                 id="onboard-speak-btn"
                 onClick={handleStop}
                 className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold
-                           rounded-full transition-all active:scale-95"
+                           rounded-full transition-all active:scale-95 cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#f87171,#ef4444)", boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
               >
                 <Square className="w-3.5 h-3.5 fill-current" /> Stop
@@ -102,7 +102,7 @@ export function TTSPanel() {
                 onClick={handleGenerate}
                 disabled={status === "loading" || !text.trim() || isOverLimit}
                 className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold
-                           rounded-full transition-all hover:-translate-y-px active:scale-95
+                           rounded-full transition-all hover:-translate-y-px active:scale-95 cursor-pointer
                            disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
                 style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", boxShadow: "0 4px 14px rgba(99,102,241,0.35)" }}
               >
@@ -140,7 +140,7 @@ export function TTSPanel() {
               <button
                 key={v.value}
                 onClick={() => setSpeaker(v.value)}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 cursor-pointer
                   ${selected
                     ? "bg-slate-50 ring-2 ring-indigo-200 shadow-sm"
                     : "hover:bg-slate-50 ring-1 ring-slate-100"

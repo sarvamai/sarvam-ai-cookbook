@@ -54,7 +54,7 @@ export function TransliteratePanel() {
           <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Romanised Input</p>
           <button
             onClick={loadSample}
-            className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition-colors"
+            className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition-colors cursor-pointer"
           >
             Load sample →
           </button>
@@ -89,7 +89,7 @@ export function TransliteratePanel() {
             onClick={handleTransliterate}
             disabled={!text.trim() || state === "loading"}
             className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm
-                       font-semibold rounded-full transition-all hover:-translate-y-px active:scale-95
+                       font-semibold rounded-full transition-all hover:-translate-y-px active:scale-95 cursor-pointer
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
             style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
           >
@@ -112,7 +112,7 @@ export function TransliteratePanel() {
           {state === "done" && result && (
             <button
               onClick={copyResult}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors cursor-pointer"
             >
               {copied
                 ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Copied</>

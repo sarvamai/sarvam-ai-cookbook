@@ -68,6 +68,13 @@ button, a {
   @apply transition-all duration-200;
 }
 
+/* ── Remove default browser focus outlines on buttons/links ── */
+/* We rely on our own hover/ring styles for visual feedback */
+button:focus,
+a:focus {
+  outline: none;
+}
+
 /* ── Recording pulse ── */
 @keyframes record-pulse {
   0%, 100% { transform: scale(1);    opacity: 1; }

@@ -87,7 +87,7 @@ export function OnboardingTooltip({ steps, currentStep, onNext, onDone }: Props)
       </svg>
 
       {/* Click outside to skip */}
-      <div className="absolute inset-0" onClick={onDone} />
+      <div className="absolute inset-0 cursor-pointer" onClick={onDone} />
 
       {/* Spotlight ring */}
       <div
@@ -150,14 +150,14 @@ export function OnboardingTooltip({ steps, currentStep, onNext, onDone }: Props)
           <div className="flex items-center justify-between">
             <button
               onClick={onDone}
-              className="text-xs text-slate-300 hover:text-slate-500 font-medium transition-colors"
+              className="text-xs text-slate-300 hover:text-slate-500 font-medium transition-colors cursor-pointer"
             >
               Skip tour
             </button>
             <button
               onClick={onNext}
               className="flex items-center gap-1.5 px-4 py-2 text-white text-xs font-semibold
-                         rounded-full transition-all"
+                         rounded-full transition-all cursor-pointer"
               style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}
             >
               {currentStep === steps.length - 1

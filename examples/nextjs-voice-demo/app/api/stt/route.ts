@@ -28,16 +28,19 @@ export async function POST(request: NextRequest) {
 
     // ── Call Sarvam STT ───────────────────────────────────────────────────────
     const sarvamForm = new FormData();
-    sarvamForm.append("file",            normalisedFile, normalisedFile.name);
-    sarvamForm.append("language_code",   languageCode);
-    sarvamForm.append("model",           STT_MODEL);
-    sarvamForm.append("with_timestamps", "false");
+    sarvamForm.append("file",          normalisedFile, normalisedFile.name);
+    sarvamForm.append("language_code", languageCode);
+    // Note: model goes as a query param, not a form field.
+    // with_timestamps is not sent — Sarvam returns 400 on unrecognised fields.
 
-    const sarvamRes = await fetch(`${SARVAM_API_BASE}/speech-to-text`, {
-      method:  "POST",
-      headers: multipartHeaders(key),
-      body:    sarvamForm,
-    });
+    const sarvamRes = await fetch(
+      `${SARVAM_API_BASE}/speech-to-text?model=${STT_MODEL}`,
+      {
+        method:  "POST",
+        headers: multipartHeaders(key),
+        body:    sarvamForm,
+      }
+    );
 
     if (!sarvamRes.ok) return handleSarvamError(sarvamRes, "STT");
 

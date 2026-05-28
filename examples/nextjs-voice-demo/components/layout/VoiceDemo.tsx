@@ -59,7 +59,7 @@ export function VoiceDemo() {
             <button
               onClick={() => setView("landing")}
               className="text-slate-900 font-semibold text-4xl tracking-tight leading-tight
-                         flex items-center py-1 hover:opacity-80 transition-opacity cursor-pointer"
+                         flex items-center py-1 hover:opacity-80 transition-opacity cursor-pointer outline-none"
             >
               sarvam
             </button>

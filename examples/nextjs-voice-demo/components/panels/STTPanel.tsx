@@ -47,7 +47,9 @@ export function STTPanel() {
       setRecordingSeconds(0);
       timerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? `Mic error: ${err.message}` : "Microphone unavailable");
+      const isDenied = err instanceof DOMException &&
+        (err.name === "NotAllowedError" || err.name === "PermissionDeniedError");
+      setErrorMsg(isDenied ? "permission_denied" : "unavailable");
       setTranscribeState("error");
     }
   }, []);
@@ -126,7 +128,7 @@ export function STTPanel() {
               <button
                 onClick={startRecording}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm
-                           font-semibold rounded-full transition-all hover:-translate-y-px active:scale-95"
+                           font-semibold rounded-full transition-all hover:-translate-y-px active:scale-95 cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
               >
                 <Mic className="w-4 h-4" /> Start Recording
@@ -147,7 +149,7 @@ export function STTPanel() {
                 <button
                   onClick={stopRecording}
                   className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm
-                             font-semibold rounded-full transition-all active:scale-95"
+                             font-semibold rounded-full transition-all active:scale-95 cursor-pointer"
                   style={{ background: "linear-gradient(135deg,#f87171,#ef4444)", boxShadow: "0 4px 14px rgba(239,68,68,0.3)" }}
                 >
                   <MicOff className="w-4 h-4" /> Stop Recording
@@ -161,7 +163,7 @@ export function STTPanel() {
                   <CheckCircle2 className="w-4 h-4" />
                   Recorded — {fmtTime(recordingSeconds)}
                 </span>
-                <button onClick={clearRecording} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                <button onClick={clearRecording} className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -189,7 +191,7 @@ export function STTPanel() {
                   <FileAudio className="w-4 h-4 text-indigo-400 shrink-0" />
                   <span className="truncate">{uploadedFile.name}</span>
                 </span>
-                <button onClick={clearFile} className="text-slate-400 hover:text-slate-600 shrink-0 p-1">
+                <button onClick={clearFile} className="text-slate-400 hover:text-slate-600 shrink-0 p-1 cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -205,7 +207,7 @@ export function STTPanel() {
             onClick={handleTranscribe}
             disabled={!hasAudio || transcribeState === "loading"}
             className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-full
-                       transition-all hover:-translate-y-px active:scale-95
+                       transition-all hover:-translate-y-px active:scale-95 cursor-pointer
                        disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
             style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", boxShadow: "0 4px 14px rgba(99,102,241,0.3)" }}
           >
@@ -215,7 +217,21 @@ export function STTPanel() {
             }
           </button>
         </div>
-        {transcribeState === "error" && errorMsg && (
+        {transcribeState === "error" && errorMsg === "permission_denied" && (
+          <div className="mt-3 flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+            <span className="text-amber-500 mt-0.5 shrink-0">🎙️</span>
+            <div>
+              <p className="text-xs font-semibold text-amber-700 mb-0.5">Microphone access blocked</p>
+              <p className="text-[11px] text-amber-600 leading-relaxed">
+                Allow microphone access in your browser settings, then reload the page.
+              </p>
+            </div>
+          </div>
+        )}
+        {transcribeState === "error" && errorMsg === "unavailable" && (
+          <p className="mt-2 text-xs text-red-500">Microphone unavailable on this device.</p>
+        )}
+        {transcribeState === "error" && errorMsg !== "permission_denied" && errorMsg !== "unavailable" && errorMsg && (
           <p className="mt-2 text-xs text-red-500">{errorMsg}</p>
         )}
       </div>
@@ -227,7 +243,7 @@ export function STTPanel() {
           {transcribeState === "done" && transcript && (
             <button
               onClick={copyTranscript}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors cursor-pointer"
             >
               {copied
                 ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Copied</>
