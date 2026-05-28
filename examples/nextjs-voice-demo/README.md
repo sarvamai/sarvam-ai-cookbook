@@ -1,6 +1,6 @@
 # Sarvam AI Voice Demo — Next.js
 
-An interactive, production-ready Next.js 15 app that showcases Sarvam AI's three core voice APIs across 10 Indian languages. No external state-management library, no Inngest, no Redis — just Next.js App Router + Tailwind CSS v4. Perfect starting point for any web application that needs Indian-language voice features.
+An interactive, production-ready Next.js 15 app that showcases Sarvam AI's three core voice APIs across 10 Indian languages. Built with the App Router, Tailwind CSS v4, and strict TypeScript — no extra state-management libraries needed. A perfect starting point for any web application that needs Indian-language voice features.
 
 ## ✨ Features
 
@@ -10,30 +10,14 @@ An interactive, production-ready Next.js 15 app that showcases Sarvam AI's three
 | 🎙️ **Speech → Text** | `/speech-to-text` | Saarika v2 |
 | 🔤 **Transliteration** | `/transliterate` | — |
 
+- **Landing page** with feature overview and a "Get Started" CTA
+- **10-step guided onboarding tour** — SVG-mask spotlight that flows across all three tabs automatically
 - **10 Indian languages**: Hindi, Tamil, Telugu, Bengali, Kannada, Malayalam, Marathi, Gujarati, Punjabi, English (India)
 - **Two TTS voices**: Priya (female) and Shubh (male)
-- **Browser microphone recording** (+ audio file upload) for STT
+- **Browser microphone recording** + audio file upload for STT
 - API key stays **server-side only** — all calls proxied through Next.js Route Handlers
-- Clean, responsive UI with Tailwind CSS v4
-- Full TypeScript — no `any` casts
-
-## 📸 Screenshot
-
-```
-┌─────────────────────────────────────────────────┐
-│  स  Sarvam AI           Voice API Demo          │
-│  Interactive playground · 10 Indian languages   │
-│                                                 │
-│  [Text → Speech]  [Speech → Text]  [Transliterate]  │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  ┌───────────────────────────────────────────┐ │
-│  │  Input text …                             │ │
-│  │  Language ▾    Voice: [Priya] [Shubh]     │ │
-│  │  [▶ Generate Speech]                      │ │
-│  └───────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
-```
+- Mic permission denied handled gracefully with a friendly UI
+- Full TypeScript — strict mode, no `any` casts
 
 ## 🚀 Quick Start
 
@@ -92,22 +76,30 @@ An interactive, production-ready Next.js 15 app that showcases Sarvam AI's three
 nextjs-voice-demo/
 ├── app/
 │   ├── api/
-│   │   ├── tts/route.ts          # Proxy → Sarvam /text-to-speech
-│   │   ├── stt/route.ts          # Proxy → Sarvam /speech-to-text
-│   │   └── transliterate/route.ts # Proxy → Sarvam /transliterate
-│   ├── globals.css               # Tailwind v4 import + keyframes
-│   ├── layout.tsx                # Root layout + metadata
-│   └── page.tsx                  # Entry point
+│   │   ├── tts/route.ts              # Proxy → Sarvam /text-to-speech
+│   │   ├── stt/route.ts              # Proxy → Sarvam /speech-to-text
+│   │   └── transliterate/route.ts   # Proxy → Sarvam /transliterate
+│   ├── globals.css                  # Tailwind v4 import + animations
+│   ├── layout.tsx                   # Root layout + metadata
+│   └── page.tsx                     # Entry point
 ├── components/
-│   ├── VoiceDemo.tsx             # Tab shell (TTS / STT / Transliterate)
-│   ├── TTSPanel.tsx              # Text-to-Speech UI + playback
-│   ├── STTPanel.tsx              # Record mic or upload file → transcript
-│   ├── TransliteratePanel.tsx    # Roman input → native script
-│   └── LanguageSelector.tsx     # Reusable language <select>
+│   ├── layout/
+│   │   ├── VoiceDemo.tsx            # App shell — landing/demo views, tab state, tour
+│   │   └── LandingPage.tsx          # Hero, feature cards, Get Started CTA
+│   ├── panels/
+│   │   ├── TTSPanel.tsx             # Text-to-Speech UI + audio playback
+│   │   ├── STTPanel.tsx             # Mic recording / file upload → transcript
+│   │   └── TransliteratePanel.tsx   # Roman input → native script output
+│   └── ui/
+│       ├── LanguageSelector.tsx     # Reusable language <select>
+│       └── OnboardingTooltip.tsx    # SVG-mask spotlight tour component
 ├── lib/
-│   ├── types.ts                  # Shared TypeScript interfaces
-│   └── constants.ts              # Languages, models, limits
-├── .env.example                  # Environment variable template
+│   ├── constants.ts                 # Languages, models, limits, voice metadata
+│   ├── types.ts                     # Shared TypeScript interfaces
+│   ├── tour.ts                      # TABS array + 10-step TOUR_STEPS
+│   ├── utils.ts                     # fmtTime, base64ToAudioUrl, normaliseMimeType
+│   └── sarvam.ts                    # Server-side API helpers (headers, error handling)
+├── .env.example                     # Environment variable template
 └── README.md
 ```
 
@@ -193,7 +185,7 @@ All three Route Handlers act as a thin, secure proxy — your `SARVAM_API_KEY` n
 
 ## 🔑 Sarvam API Reference
 
-| API | Endpoint | Header |
+| API | Endpoint | Auth Header |
 |---|---|---|
 | Text-to-Speech | `POST https://api.sarvam.ai/text-to-speech` | `api-subscription-key` |
 | Speech-to-Text | `POST https://api.sarvam.ai/speech-to-text` | `api-subscription-key` |
