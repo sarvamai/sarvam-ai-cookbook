@@ -1,5 +1,9 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # API Configuration
 SCHEME_API_URL = "https://api.sarvam.ai/v1/chat/completions"
@@ -51,7 +55,8 @@ def summarize_scheme(user_input: str, api_key: str, category: str = "") -> str:
         system_prompt += f" Category: {category}"
 
     payload = {
-        "model": "sarvam-m",
+        "model": "sarvam-105b",
+        "max_tokens": 2000,
         "wiki_grounding": True,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -99,8 +104,7 @@ def translate_summary(summary: str, target_lang_code: str, api_key: str) -> str:
             "target_language_code": target_lang_code,
             "speaker_gender": "Male",
             "mode": "classic-colloquial",
-            "model": "mayura:v1",
-            "enable_preprocessing": False
+            "model": "mayura:v1"
         }
         try:
             response = requests.post(TRANSLATION_API_URL, headers=headers, data=json.dumps(payload))
@@ -116,11 +120,10 @@ def translate_summary(summary: str, target_lang_code: str, api_key: str) -> str:
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    # Replace with your actual SARVAM API Key
-    SARVAM_API_KEY = "YOUR_SARVAM_API_KEY" 
+    SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
 
-    if SARVAM_API_KEY == "YOUR_SARVAM_API_KEY":
-        print("Please replace 'YOUR_SARVAM_API_KEY' with your actual API key to run the examples.")
+    if not SARVAM_API_KEY:
+        print("Error: SARVAM_API_KEY not found. Add it to your .env file.")
     else:
         # Example 1: Summarize a scheme
         print("--- Summarizing Scheme ---")
