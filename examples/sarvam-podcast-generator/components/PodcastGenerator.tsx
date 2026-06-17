@@ -174,7 +174,7 @@ export function PodcastGenerator() {
             AI Podcast Generator
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Transform your PDF documents into engaging AI-powered podcasts using Sarvam 105B for script generation, Sarvam Bulbul v3 TTS for text-to-speech, and Mistral OCR for PDF parsing
+            Transform your PDF documents into engaging AI-powered podcasts using Sarvam 105B for script generation, Sarvam Bulbul v3 TTS for text-to-speech, and Sarvam Vision for PDF parsing
           </p>
           <div className="flex items-center justify-center gap-4 mt-6">
             <Badge variant="secondary" className="text-sm">
@@ -183,7 +183,7 @@ export function PodcastGenerator() {
             </Badge>
             <Badge variant="secondary" className="text-sm">
               <FileText className="w-4 h-4 mr-1" />
-              Mistral OCR
+              Sarvam Vision
             </Badge>
             <Badge variant="secondary" className="text-sm">
               <Volume2 className="w-4 h-4 mr-1" />
