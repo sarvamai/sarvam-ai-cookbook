@@ -7,10 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "inngest": "npx inngest-cli@latest dev"
+    "inngest": "npx inngest-cli@1.8.0 dev"
   },
   "dependencies": {
-    "@mistralai/mistralai": "^1.7.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
     "@radix-ui/react-label": "^2.1.7",

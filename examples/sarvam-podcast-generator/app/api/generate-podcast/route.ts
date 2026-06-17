@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { inngest } from '../../../lib/inngest';
 import { createJob } from '../../../lib/job-store';
@@ -28,7 +28,7 @@ const LANGUAGE_PROMPT_NAMES: { [key: string]: string } = {
   'ml-IN': 'Malayalam',
   'kn-IN': 'Kannada',
   'pa-IN': 'Punjabi',
-  'od-IN': 'Odia'
+  'or-IN': 'Odia'
 };
 
 // Voice mappings for different speakers (bulbul:v3)
@@ -43,7 +43,7 @@ const VOICE_MAPPINGS: { [key: string]: { host: string; guest: string } } = {
   'ml-IN': { host: 'priya', guest: 'shubh' },
   'kn-IN': { host: 'priya', guest: 'shubh' },
   'pa-IN': { host: 'priya', guest: 'shubh' },
-  'od-IN': { host: 'priya', guest: 'shubh' }
+  'or-IN': { host: 'priya', guest: 'shubh' }
 };
 
 async function callSarvamChat(messages: Array<{role: string, content: string}>, temperature: number = 0.7, maxTokens?: number, retryCount: number = 0): Promise<string> {
@@ -54,7 +54,7 @@ async function callSarvamChat(messages: Array<{role: string, content: string}>, 
 
   const requestBody: any = {
     messages,
-    model: 'sarvam-m',
+    model: 'sarvam-105b',
     temperature
   };
 
@@ -130,7 +130,7 @@ async function makeRateLimitedApiCall<T>(apiCall: () => Promise<T>): Promise<T> 
   return apiCall();
 }
 
-// Function to estimate token count (rough approximation: 1 token ≈ 4 characters)
+// Function to estimate token count (rough approximation: 1 token â‰ˆ 4 characters)
 function estimateTokenCount(text: string): number {
   return Math.ceil(text.length / 4);
 }
@@ -298,7 +298,7 @@ Format:
 
   // Calculate the base prompt tokens (without content)
   const basePromptTokens = estimateTokenCount(promptTemplate.replace('CONTENT_PLACEHOLDER', ''));
-  const maxTotalTokens = 7000; // Leave some buffer under the 7168 limit
+  const maxTotalTokens = 60000; // Leave some buffer under the 7168 limit
   const maxContentTokens = maxTotalTokens - basePromptTokens;
 
   console.log(`Base prompt tokens: ${basePromptTokens}, Max content tokens: ${maxContentTokens}`);
@@ -320,7 +320,7 @@ Format:
   
   console.log(`Final prompt tokens: ${finalPromptTokens}`);
   
-  if (finalPromptTokens > 7168) {
+  if (finalPromptTokens > 60000) {
     throw new Error(`Prompt still too long after processing: ${finalPromptTokens} tokens (max: 7168)`);
   }
 
@@ -331,7 +331,7 @@ Format:
           role: 'user',
           content: prompt
         }
-      ], 0.7, 8192)
+      ], 0.7, 4096)
     );
 
     if (!scriptText) {

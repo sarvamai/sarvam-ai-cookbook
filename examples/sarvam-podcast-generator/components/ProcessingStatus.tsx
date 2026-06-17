@@ -15,7 +15,7 @@ export function ProcessingStatus({ step }: ProcessingStatusProps) {
       return {
         icon: FileText,
         title: 'Processing Document',
-        description: 'Extracting text and analyzing content with Mistral OCR',
+        description: 'Extracting text and analyzing content with Sarvam Vision',
         progress: 25,
         color: 'text-blue-600'
       };

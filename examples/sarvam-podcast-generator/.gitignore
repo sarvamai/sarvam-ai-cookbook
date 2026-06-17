@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env
+.env*.local
+
+# inngest local dev artifacts
+.inngest/
+
+# unignore lib (overrides root .gitignore which ignores lib/)
+!lib/
 
 # vercel
 .vercel
