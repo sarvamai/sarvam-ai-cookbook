@@ -9,5 +9,8 @@ export const { GET, POST, PUT } = serve({
     generatePodcastFunction,
     audioCleanupFunction
   ],
-  signingKey: process.env.INNGEST_SIGNING_KEY,
+  // Only pass a signing key in production; passing an empty string breaks the dev handshake.
+  ...(process.env.INNGEST_SIGNING_KEY
+    ? { signingKey: process.env.INNGEST_SIGNING_KEY }
+    : {}),
 }); 

@@ -64,7 +64,7 @@ export function PodcastGenerator() {
     setPodcastData(null);
     setJobStatus(null);
     setCurrentJobId(null);
-    setProcessingStep('Processing PDF with Mistral OCR...');
+    setProcessingStep('Processing PDF with Sarvam Vision...');
 
     try {
       const formData = new FormData();

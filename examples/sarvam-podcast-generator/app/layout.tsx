@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Sarvam AI Podcast Generator",
-  description: "AI-powered document analysis using Mistral OCR and podcast generation using Sarvam AI APIs",
+  description: "AI-powered document analysis using Sarvam Vision and podcast generation using Sarvam AI APIs",
 };
 
 export default function RootLayout({

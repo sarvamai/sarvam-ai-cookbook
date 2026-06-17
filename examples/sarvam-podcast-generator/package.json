@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "inngest": "npx inngest-cli@latest dev"
+    "inngest": "npx inngest-cli@1.8.0 dev"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

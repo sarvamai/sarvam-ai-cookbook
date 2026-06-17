@@ -331,7 +331,7 @@ Format:
           role: 'user',
           content: prompt
         }
-      ], 0.7, 8192)
+      ], 0.7, 4096)
     );
 
     if (!scriptText) {
