@@ -1,6 +1,8 @@
-
-
 import os
+from dotenv import load_dotenv
+
+# Load variables from a .env file if present
+load_dotenv()
 
 # Sarvam AI Configuration
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "YOUR_API_KEY")
