@@ -14,7 +14,8 @@ def get_chat_response(api_key, user_input):
     }
     # This is the data payload for the API request.
     data = {
-        "model": "sarvam-m",  # Specifies the model to use.
+        "model": "sarvam-105b",  # Specifies the model to use.
+        "max_tokens": 2000,  # reasoning model needs a token budget or content is empty
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},  # System message to guide the bot's behavior.
             {"role": "user", "content": user_input},  # Your question.
