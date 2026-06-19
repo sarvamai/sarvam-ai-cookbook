@@ -1,9 +1,15 @@
 import requests
 import json
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Ensure UTF-8 output so symbols like ₹ and Indic scripts print on any platform
+# (Windows consoles default to cp1252, which can't encode these characters).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # API Configuration
 SCHEME_API_URL = "https://api.sarvam.ai/v1/chat/completions"
