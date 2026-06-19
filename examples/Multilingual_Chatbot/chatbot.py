@@ -1,6 +1,14 @@
 import argparse
+import sys
 import requests
 from typing import List, Dict, Any
+
+# Ensure UTF-8 I/O so multilingual (Indic) input and output work on any platform.
+# Windows consoles default to cp1252, which mangles non-Latin scripts.
+if hasattr(sys.stdin, "reconfigure"):
+    sys.stdin.reconfigure(encoding="utf-8")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 
 class MultilingualChatbot:
@@ -94,7 +102,7 @@ class MultilingualChatbot:
             response = requests.post(
                 self.base_url,
                 headers=self.headers,
-                json={"model": "sarvam-m", "messages": messages, "temperature": 0.7},
+                json={"model": "sarvam-105b", "max_tokens": 2000, "messages": messages, "temperature": 0.7},
             )
             response.raise_for_status()
 
