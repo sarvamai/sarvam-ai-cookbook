@@ -119,7 +119,7 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
         "Content-Type": "application/json"
     }
     
-    system_prompt = f"""You are an expert travel planner specializing in {destination}. Please only generate the itinerary in {language}. Don't use any other language. Especially skip english.
+    system_prompt = f"""You are an expert travel planner specializing in {destination}. Generate the itinerary in {language}.
     Create a detailed {duration}-day itinerary that includes:
     - Daily activities with timing
     - Local attractions and hidden gems

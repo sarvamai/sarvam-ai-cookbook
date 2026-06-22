@@ -1,6 +1,14 @@
 import streamlit as st
 import pandas as pd
-from sarvam_utils import detect_language, translate_text, transliterate_text, generate_itinerary
+from sarvam_utils import generate_itinerary
+
+# Language names used in the generation prompt (the model produces well-structured
+# markdown directly in these languages, which avoids translating markdown).
+LANG_NAMES = {
+    'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali', 'ta': 'Tamil',
+    'te': 'Telugu', 'mr': 'Marathi', 'gu': 'Gujarati', 'kn': 'Kannada',
+    'ml': 'Malayalam', 'pa': 'Punjabi'
+}
 
 # Set page config
 st.set_page_config(
@@ -66,68 +74,52 @@ with st.form("travel_planner"):
     
     submit_button = st.form_submit_button("Plan My Trip!")
 
-# Process the form submission
+# On submit, store the trip inputs and clear any cached itineraries.
 if submit_button and destination:
-    with st.spinner("Creating your personalized itinerary..."):
-        # Detect language of input
-        lang_detection = detect_language(destination)
-        detected_lang = lang_detection.get('language_code', 'en-IN')
-        
-        # Generate itinerary using Sarvam Chat Completions
-        itinerary_response = generate_itinerary(
-            destination=destination,
-            duration=duration,
-            interests=interests,
-            budget=budget,
-            language=detected_lang
-        )
-        
-        # Extract the generated itinerary
-        itinerary = itinerary_response.get('choices', [{}])[0].get('message', {}).get('content', '')
-        
-        # Translate itinerary to preferred language if needed
-        if st.session_state.preferred_language != 'en':
-            translated_itinerary = translate_text(
-                itinerary,
-                st.session_state.preferred_language,
-                mode="formal"
+    st.session_state.trip = {
+        'destination': destination,
+        'duration': duration,
+        'interests': interests,
+        'budget': budget,
+    }
+    st.session_state.itineraries = {}  # cache keyed by language code
+
+# Display results. This block runs on every rerun (including when the sidebar
+# language changes). The itinerary is generated DIRECTLY in the selected
+# language by the multilingual model — which yields clean, structured markdown —
+# rather than translating English markdown after the fact. Results are cached
+# per language so switching back and forth doesn't regenerate.
+if st.session_state.get('trip'):
+    trip = st.session_state.trip
+    lang = st.session_state.preferred_language
+    cache = st.session_state.setdefault('itineraries', {})
+
+    if lang not in cache:
+        with st.spinner("Creating your personalized itinerary..."):
+            itinerary_response = generate_itinerary(
+                destination=trip['destination'],
+                duration=trip['duration'],
+                interests=trip['interests'],
+                budget=trip['budget'],
+                language=LANG_NAMES.get(lang, 'English')
             )
-            itinerary = translated_itinerary.get('translated_text', itinerary)
-        
-        # Display the itinerary
-        st.markdown("### Your Personalized Itinerary")
-        st.markdown(itinerary)
-        
-        # Generate and display travel tips
-        tips_prompt = f"""Based on the destination {destination} and budget level {budget}, 
-        provide practical travel tips including:
-        - Best time to visit
-        - Local transportation options
-        - Cultural etiquette and customs
-        - Safety considerations
-        - Essential local phrases
-        - Packing recommendations"""
-        
-        tips_response = generate_itinerary(
-            destination=destination,
-            duration=1,
-            interests=["Practical Tips"],
-            budget=budget,
-            language=detected_lang
-        )
-        
-        tips = tips_response.get('choices', [{}])[0].get('message', {}).get('content', '')
-        
-        if st.session_state.preferred_language != 'en':
-            translated_tips = translate_text(
-                tips,
-                st.session_state.preferred_language,
-                mode="formal"
+            itinerary = itinerary_response.get('choices', [{}])[0].get('message', {}).get('content', '')
+
+            tips_response = generate_itinerary(
+                destination=trip['destination'],
+                duration=1,
+                interests=["Practical Tips"],
+                budget=trip['budget'],
+                language=LANG_NAMES.get(lang, 'English')
             )
-            tips = translated_tips.get('translated_text', tips)
-        
-        st.markdown("### Travel Tips")
-        st.markdown(tips)
+            tips = tips_response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            cache[lang] = {'itinerary': itinerary, 'tips': tips}
+
+    result = cache[lang]
+    st.markdown(f"### Your Personalized Itinerary for {trip['destination']}")
+    st.markdown(result['itinerary'])
+    st.markdown("### Travel Tips")
+    st.markdown(result['tips'])
 
 # Footer
 st.markdown("---")
