@@ -2,8 +2,9 @@ import os
 import openai
 import streamlit as st
 from dotenv import load_dotenv
-from e2b_code_interpreter import Sandbox
-import base64
+import matplotlib
+matplotlib.use("Agg")  # headless backend — no display needed
+import matplotlib.pyplot as plt
 import re
 
 load_dotenv()
@@ -45,57 +46,41 @@ class VisualizationAgent:
         try:
             # Get code generation from Sarvam
             response = self.client.chat.completions.create(
-                model="sarvam-m",
+                model="sarvam-105b",
+                max_tokens=3000,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_request}
                 ]
             )
-            
+
             # Extract and clean the generated code
             raw_code = response.choices[0].message.content
             self.last_generated_code = self.clean_generated_code(raw_code)
-            
-            # Create sandbox and execute code
-            sandbox = Sandbox(api_key=os.environ.get("E2B_API_KEY"))
-            
-            # Prepare the code with proper imports and error handling
-            visualization_code = """
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import sys
 
-def generate_plot():
-{code}
+            # Execute the generated code locally to produce the chart.
+            # NOTE: this runs model-generated Python in-process, so only use it
+            # with trusted prompts. (The original ran it in an E2B sandbox; local
+            # execution keeps the example self-contained — only a Sarvam key is needed.)
+            plot_path = "plot.png"
+            if os.path.exists(plot_path):
+                os.remove(plot_path)
 
-try:
-    generate_plot()
-    print('Visualization completed successfully')
-except Exception as e:
-    print(f'Error in visualization: {{str(e)}}', file=sys.stderr)
-    sys.exit(1)
-""".format(code='\n'.join('    ' + line for line in self.last_generated_code.splitlines()))
+            exec(self.last_generated_code, {"__name__": "__main__"})
 
-            # Execute code and get results
-            execution = sandbox.run_code(visualization_code)
-            
-            if execution.error:
-                print(f"Code execution error: {execution.error}")
-                st.error(f"Error executing code: {execution.error.value}")
-                return None
+            # The system prompt asks the model to save to plot.png; if it didn't,
+            # fall back to saving whatever figure is currently open.
+            if not os.path.exists(plot_path) and plt.get_fignums():
+                plt.savefig(plot_path, bbox_inches="tight", dpi=300)
+            plt.close("all")
 
-            # Look for the PNG file in results
-            for result in execution.results:
-                if result.png:
-                    return base64.b64decode(result.png)
-            
-            if not any(result.png for result in execution.results):
-                st.warning("No visualization was generated. The code executed successfully but didn't create a plot.")
-            
+            if os.path.exists(plot_path):
+                with open(plot_path, "rb") as f:
+                    return f.read()
+
+            st.warning("The code executed but didn't produce a plot. Try rephrasing your request.")
             return None
-                
+
         except Exception as e:
             st.error(f"Error in visualization generation: {str(e)}")
             return None
