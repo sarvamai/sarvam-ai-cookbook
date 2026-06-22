@@ -34,30 +34,66 @@ def detect_language(text):
     )
     return response.json()
 
+def _chunk_text(text, max_length=900):
+    """Split text into chunks under the translation API's per-request limit,
+    breaking at paragraph/line boundaries where possible."""
+    if len(text) <= max_length:
+        return [text]
+
+    chunks = []
+    current = ""
+    for line in text.splitlines(keepends=True):
+        # If a single line is itself too long, hard-split it.
+        while len(line) > max_length:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(line[:max_length])
+            line = line[max_length:]
+        if len(current) + len(line) > max_length:
+            chunks.append(current)
+            current = line
+        else:
+            current += line
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 def translate_text(text, target_language, mode="formal"):
-    """Translate text to target language using Sarvam's translation API."""
+    """Translate text to target language using Sarvam's translation API.
+
+    Long inputs are chunked because mayura:v1 accepts a limited number of
+    characters per request; chunks are translated separately and rejoined.
+    """
     headers = {
         "api-subscription-key": SARVAM_API_KEY,
         "Content-Type": "application/json"
     }
-    
+
     # Convert language code to Sarvam format
     target_lang_code = LANGUAGE_CODES.get(target_language, 'en-IN')
-    
-    response = requests.post(
-        "https://api.sarvam.ai/translate",
-        headers=headers,
-        json={
-            "input": text,
-            "source_language_code": "auto",
-            "target_language_code": target_lang_code,
-            "model": "mayura:v1",
-            "mode": mode,
-            "output_script": "fully-native",
-            "numerals_format": "international"
-        }
-    )
-    return response.json()
+
+    translated_parts = []
+    for chunk in _chunk_text(text):
+        response = requests.post(
+            "https://api.sarvam.ai/translate",
+            headers=headers,
+            json={
+                "input": chunk,
+                "source_language_code": "auto",
+                "target_language_code": target_lang_code,
+                "model": "mayura:v1",
+                "mode": mode,
+                "output_script": "fully-native",
+                "numerals_format": "international"
+            }
+        )
+        data = response.json()
+        # On any chunk failure, fall back to the original text for that chunk.
+        translated_parts.append(data.get("translated_text", chunk))
+
+    return {"translated_text": "".join(translated_parts)}
 
 def transliterate_text(text, source_language_code, target_language_code):
     """Transliterate text from one Indic script to another using Sarvam's API."""
