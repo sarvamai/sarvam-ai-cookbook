@@ -71,7 +71,7 @@ if submit_button and destination:
     with st.spinner("Creating your personalized itinerary..."):
         # Detect language of input
         lang_detection = detect_language(destination)
-        detected_lang = lang_detection.get('language', 'en')
+        detected_lang = lang_detection.get('language_code', 'en-IN')
         
         # Generate itinerary using Sarvam Chat Completions
         itinerary_response = generate_itinerary(

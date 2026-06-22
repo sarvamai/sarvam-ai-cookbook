@@ -22,15 +22,15 @@ LANGUAGE_CODES = {
 }
 
 def detect_language(text):
-    """Detect the language of the input text."""
+    """Detect the language of the input text using Sarvam's Text LID API."""
     headers = {
-        "Authorization": f"Bearer {SARVAM_API_KEY}",
+        "api-subscription-key": SARVAM_API_KEY,
         "Content-Type": "application/json"
     }
     response = requests.post(
-        f"{BASE_URL}/detect-language",
+        "https://api.sarvam.ai/text-lid",
         headers=headers,
-        json={"text": text}
+        json={"input": text}
     )
     return response.json()
 
@@ -51,26 +51,27 @@ def translate_text(text, target_language, mode="formal"):
             "input": text,
             "source_language_code": "auto",
             "target_language_code": target_lang_code,
+            "model": "mayura:v1",
             "mode": mode,
-            "enable_preprocessing": True,
             "output_script": "fully-native",
             "numerals_format": "international"
         }
     )
     return response.json()
 
-def transliterate_text(text, target_script):
-    """Transliterate text to target script."""
+def transliterate_text(text, source_language_code, target_language_code):
+    """Transliterate text from one Indic script to another using Sarvam's API."""
     headers = {
-        "Authorization": f"Bearer {SARVAM_API_KEY}",
+        "api-subscription-key": SARVAM_API_KEY,
         "Content-Type": "application/json"
     }
     response = requests.post(
-        f"{BASE_URL}/transliterate",
+        "https://api.sarvam.ai/transliterate",
         headers=headers,
         json={
-            "text": text,
-            "target_script": target_script
+            "input": text,
+            "source_language_code": source_language_code,
+            "target_language_code": target_language_code
         }
     )
     return response.json()
@@ -103,9 +104,9 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
         headers=headers,
         json={
             "messages": messages,
-            "model": "sarvam-m",
+            "model": "sarvam-105b",
             "temperature": 0.7,
-            "max_tokens": 5000
+            "max_tokens": 4000
         }
     )
     
