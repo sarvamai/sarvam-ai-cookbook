@@ -2,10 +2,13 @@
 An intelligent graph and chart generator that transforms natural language prompts into visual representations using Python and Matplotlib, powered by Sarvam AI. The AI-generated plotting code is executed locally to render the chart.
 
 ### ✨ Features
-- Intelligent Conversion: Converts simple English prompts into detailed visual charts.
-- Diverse Chart Types: Supports the generation of bar, line, pie, and scatter plots.
+- Intelligent Conversion: Converts natural-language prompts into detailed visual charts.
+- 🌐 Multilingual: Prompt in English **or an Indian language** (Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Odia). When you prompt in an Indic language, the chart's title and labels are rendered **in that language and script**.
+- Diverse Chart Types: Supports the generation of bar, line, pie, scatter, stacked-bar and area charts.
 - AI-Powered Understanding: Leverages the Sarvam AI API to accurately interpret user intent.
 - Flexible Data Handling: Includes capabilities for random and sample data generation.
+
+> **Note on fonts:** Rendering Indic-language labels needs a font that supports the script. Most systems already have one (e.g. **Nirmala UI** on Windows). On Linux/macOS install the matching **Noto Sans** font (e.g. `Noto Sans Devanagari`) if labels appear as boxes; the app auto-detects an available font and falls back to English labels if none is found.
 
 ### 🚀 Getting Started
 
