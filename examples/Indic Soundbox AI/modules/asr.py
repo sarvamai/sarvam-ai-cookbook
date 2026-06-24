@@ -15,7 +15,7 @@ def speech_to_text(audio_blob):
 
     files = {'file': ('input.wav', audio_blob, 'audio/wav')}
     data = {
-        'model': 'saarika:v2',
+        'model': 'saarika:v2.5',
         'language_code': 'unknown'
     }
     headers = {'api-subscription-key': SARVAM_API_KEY}
