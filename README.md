@@ -1,5 +1,7 @@
 ### Sarvam AI Cookbook
 
+[![Recipe PR Check](https://github.com/sarvamai/sarvam-ai-cookbook/actions/workflows/pr-recipe-check.yml/badge.svg)](https://github.com/sarvamai/sarvam-ai-cookbook/actions/workflows/pr-recipe-check.yml)
+
 Welcome to the **Sarvam AI Cookbook**! This repository provides example code, guides, and tutorials to help you accomplish common tasks using the **Sarvam AI API**. Whether you're building conversational AI, generating text, or working on other AI-powered applications, these resources will help you get started quickly.
 
 #### Getting Started
