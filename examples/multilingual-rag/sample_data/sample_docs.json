@@ -1,0 +1,74 @@
+[
+  {
+    "id": "edu_001",
+    "language": "en-IN",
+    "topic": "education",
+    "title": "National Education Policy 2020",
+    "content": "The National Education Policy 2020 replaces the 34-year-old framework and introduces a 5+3+3+4 curricular structure covering ages 3 to 18. It emphasises foundational literacy, mother-tongue instruction until Grade 5, and flexibility in subject choices. The policy targets a 50 per cent Gross Enrollment Ratio in higher education by 2035.",
+    "content_english": "The National Education Policy 2020 replaces the 34-year-old framework and introduces a 5+3+3+4 curricular structure covering ages 3 to 18. It emphasises foundational literacy, mother-tongue instruction until Grade 5, and flexibility in subject choices. The policy targets a 50 per cent Gross Enrollment Ratio in higher education by 2035."
+  },
+  {
+    "id": "edu_002",
+    "language": "hi-IN",
+    "topic": "education",
+    "title": "राष्ट्रीय शिक्षा नीति 2020",
+    "content": "राष्ट्रीय शिक्षा नीति 2020 पुरानी व्यवस्था की जगह 5+3+3+4 पाठ्यक्रम संरचना लागू करती है जो 3 से 18 वर्ष की आयु को कवर करती है। यह नीति बुनियादी साक्षरता, कक्षा 5 तक मातृभाषा में शिक्षा और विषय चयन में लचीलेपन पर जोर देती है। 2035 तक उच्च शिक्षा में सकल नामांकन अनुपात 50 प्रतिशत करने का लक्ष्य है।",
+    "content_english": "The National Education Policy 2020 replaces the old framework with a 5+3+3+4 curricular structure covering ages 3 to 18. It emphasises foundational literacy, mother-tongue instruction until Grade 5, and subject flexibility. The target is a 50 per cent Gross Enrollment Ratio in higher education by 2035."
+  },
+  {
+    "id": "edu_003",
+    "language": "ta-IN",
+    "topic": "education",
+    "title": "தேசிய கல்வி கொள்கை 2020",
+    "content": "தேசிய கல்வி கொள்கை 2020, பழைய கட்டமைப்பை மாற்றி 3 முதல் 18 வயது வரை 5+3+3+4 பாடத்திட்ட அமைப்பை அறிமுகப்படுத்துகிறது. அடிப்படை கல்வியறிவு, 5 ஆம் வகுப்பு வரை தாய்மொழியில் கற்பித்தல் மற்றும் பாடத் தேர்வில் நெகிழ்வுத்தன்மை ஆகியவை முக்கிய அம்சங்கள். 2035 ஆம் ஆண்டுக்குள் உயர்கல்வியில் மொத்த சேர்க்கை விகிதத்தை 50 சதவீதமாக உயர்த்துவது இலக்காகும்.",
+    "content_english": "The National Education Policy 2020 replaces the old framework with a 5+3+3+4 curricular structure covering ages 3 to 18. Key features include foundational literacy, mother-tongue instruction until Grade 5, and subject flexibility. The target is a 50 per cent Gross Enrollment Ratio in higher education by 2035."
+  },
+  {
+    "id": "did_001",
+    "language": "en-IN",
+    "topic": "digital_id",
+    "title": "Aadhaar — India's Biometric Identity System",
+    "content": "Aadhaar is a 12-digit unique identity number issued to Indian residents by the Unique Identification Authority of India (UIDAI). It captures biometric data — fingerprints and iris scans — alongside demographic information and is used for Direct Benefit Transfer of subsidies and access to government services. The Aadhaar Act 2016 governs its use and protects resident privacy.",
+    "content_english": "Aadhaar is a 12-digit unique identity number issued to Indian residents by the Unique Identification Authority of India (UIDAI). It captures biometric data — fingerprints and iris scans — alongside demographic information and is used for Direct Benefit Transfer of subsidies and access to government services. The Aadhaar Act 2016 governs its use and protects resident privacy."
+  },
+  {
+    "id": "did_002",
+    "language": "hi-IN",
+    "topic": "digital_id",
+    "title": "आधार — भारत की बायोमेट्रिक पहचान प्रणाली",
+    "content": "आधार भारतीय विशिष्ट पहचान प्राधिकरण (यूआईडीएआई) द्वारा जारी 12-अंकीय विशिष्ट पहचान संख्या है। इसमें उंगलियों के निशान और आईरिस स्कैन सहित जनसांख्यिकीय जानकारी दर्ज होती है और इसका उपयोग सब्सिडी के प्रत्यक्ष लाभ हस्तांतरण तथा सरकारी सेवाओं तक पहुंच के लिए होता है। आधार अधिनियम 2016 इसके उपयोग को नियंत्रित करता है।",
+    "content_english": "Aadhaar is a 12-digit unique identity number issued by the Unique Identification Authority of India (UIDAI). It records fingerprints and iris scans alongside demographic information and is used for Direct Benefit Transfer of subsidies and access to government services. The Aadhaar Act 2016 governs its use."
+  },
+  {
+    "id": "did_003",
+    "language": "ta-IN",
+    "topic": "digital_id",
+    "title": "ஆதார் — இந்தியாவின் பயோமெட்ரிக் அடையாள அமைப்பு",
+    "content": "ஆதார் என்பது இந்திய தனிப்பட்ட அடையாள ஆணையம் (UIDAI) வழங்கும் 12 இலக்க தனித்துவமான அடையாள எண்ணாகும். இது விரல் ரேகைகள் மற்றும் கண்ணின் ஐரிஸ் ஸ்கேன்களுடன் மக்கள்தொகை தகவல்களை சேகரிக்கிறது மற்றும் மானியங்களின் நேரடி பயன் பரிமாற்றம் மற்றும் அரசு சேவைகளை அணுகுவதற்கு பயன்படுகிறது. ஆதார் சட்டம் 2016 அதன் பயன்பாட்டை நிர்வகிக்கிறது.",
+    "content_english": "Aadhaar is a 12-digit unique identity number issued by the Unique Identification Authority of India (UIDAI). It captures fingerprints and iris scans alongside demographic data and is used for Direct Benefit Transfer of subsidies and access to government services. The Aadhaar Act 2016 governs its use."
+  },
+  {
+    "id": "agr_001",
+    "language": "en-IN",
+    "topic": "agriculture",
+    "title": "PM-KISAN — Direct Income Support for Farmers",
+    "content": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN) provides eligible farmer families with direct income support of Rs. 6,000 per year, paid in three installments of Rs. 2,000 via Direct Benefit Transfer. The scheme covers all landholding farmers with cultivable land, subject to exclusion criteria. It was launched in February 2019 and has since benefited over 110 million farmers across India.",
+    "content_english": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN) provides eligible farmer families with direct income support of Rs. 6,000 per year, paid in three installments of Rs. 2,000 via Direct Benefit Transfer. The scheme covers all landholding farmers with cultivable land, subject to exclusion criteria. It was launched in February 2019 and has since benefited over 110 million farmers across India."
+  },
+  {
+    "id": "agr_002",
+    "language": "hi-IN",
+    "topic": "agriculture",
+    "title": "पीएम-किसान — किसानों को प्रत्यक्ष आय सहायता",
+    "content": "प्रधानमंत्री किसान सम्मान निधि (पीएम-किसान) पात्र किसान परिवारों को प्रतिवर्ष 6,000 रुपये की प्रत्यक्ष आय सहायता देती है, जो प्रत्यक्ष लाभ हस्तांतरण के माध्यम से 2,000 रुपये की तीन किस्तों में मिलती है। यह योजना कृषि योग्य भूमि वाले सभी भूमिधारक किसानों को कवर करती है। फरवरी 2019 में शुरू होने के बाद से यह 11 करोड़ से अधिक किसानों को लाभान्वित कर चुकी है।",
+    "content_english": "PM-KISAN provides eligible farmer families with direct income support of Rs. 6,000 per year, paid in three installments of Rs. 2,000 via Direct Benefit Transfer. The scheme covers all landholding farmers with cultivable land. Launched in February 2019, it has benefited over 110 million farmers across India."
+  },
+  {
+    "id": "agr_003",
+    "language": "ta-IN",
+    "topic": "agriculture",
+    "title": "பிரதம மந்திரி கிசான் சம்மான் நிதி",
+    "content": "பிரதம மந்திரி கிசான் சம்மான் நிதி (PM-KISAN) தகுதியான விவசாயி குடும்பங்களுக்கு ஆண்டுக்கு ரூ. 6,000 நேரடி வருமான ஆதரவு வழங்குகிறது; இது நேரடி பயன் பரிமாற்றம் வழியாக ரூ. 2,000 வீதம் மூன்று தவணைகளில் செலுத்தப்படுகிறது. சாகுபடி நிலம் உள்ள அனைத்து நில உடைமை விவசாயிகளையும் இத்திட்டம் உள்ளடக்குகிறது. பிப்ரவரி 2019 இல் தொடங்கப்பட்ட இத்திட்டம் 11 கோடிக்கும் அதிகமான விவசாயிகளுக்கு பயனளித்துள்ளது.",
+    "content_english": "PM-KISAN provides eligible farmer families with direct income support of Rs. 6,000 per year, paid in three installments of Rs. 2,000 via Direct Benefit Transfer. The scheme covers all landholding farmers with cultivable land. Launched in February 2019, it has benefited over 110 million farmers across India."
+  }
+]
