@@ -1,0 +1,9 @@
+# Development and CI dependencies for the recipe validator.
+# These are NOT added to any recipe's own requirements.txt.
+#
+# Install with:
+#   pip install -r requirements-dev.txt
+
+packaging>=23.0
+pytest>=7.0.0
+pytest-cov>=4.0.0

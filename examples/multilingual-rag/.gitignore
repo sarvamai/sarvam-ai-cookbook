@@ -1,0 +1,6 @@
+.env
+sample_data/*
+outputs/*
+!sample_data/.gitkeep
+!sample_data/sample_docs.json
+!outputs/.gitkeep
