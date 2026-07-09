@@ -1,0 +1,119 @@
+name: Recipe PR Check
+
+# Runs on every PR to main that touches recipe directories, the validator
+# script itself, or its test suite. No API keys or secrets are required.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "scripts/validate_recipe.py"
+      - "tests/**"
+      - "requirements-dev.txt"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: unit-tests
+  # Installs requirements-dev.txt and runs the full pytest suite for the
+  # validator. This job always runs when the workflow triggers.
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: Validator unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run validator tests
+        run: pytest tests/test_validate_recipe.py -v --tb=short
+
+  # ---------------------------------------------------------------------------
+  # Job 2: validate-recipes
+  # Detects which examples/ subdirectories were changed in this PR (excluding
+  # TEMPLATE), then runs validate_recipe.py on each one. If any recipe fails
+  # validation, the job exits non-zero and the PR check is marked as failed.
+  # ---------------------------------------------------------------------------
+  validate-recipes:
+    name: Validate changed recipes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history required for git diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install validator runtime dependency
+        # validate_recipe.py only needs 'packaging' beyond the stdlib.
+        run: pip install "packaging>=23.0"
+
+      - name: Detect changed recipe directories
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          python - <<'PYEOF'
+          import os
+          import subprocess
+
+          base = os.environ["BASE_REF"]
+
+          result = subprocess.run(
+              ["git", "diff", "--name-only", f"origin/{base}...HEAD"],
+              capture_output=True,
+              text=True,
+              check=True,
+          )
+
+          dirs = set()
+          for path in result.stdout.splitlines():
+              parts = path.split("/")
+              # Only include top-level examples/ subdirs; skip TEMPLATE.
+              if (
+                  len(parts) >= 2
+                  and parts[0] == "examples"
+                  and parts[1] not in {"TEMPLATE", ""}
+                  and os.path.isdir(f"examples/{parts[1]}")
+              ):
+                  dirs.add(f"examples/{parts[1]}")
+
+          output_file = os.environ["GITHUB_OUTPUT"]
+          with open(output_file, "a") as fh:
+              fh.write(f"dirs={' '.join(sorted(dirs))}\n")
+              fh.write(f"count={len(dirs)}\n")
+
+          print(
+              f"Changed recipe directories ({len(dirs)}): {sorted(dirs)}",
+              flush=True,
+          )
+          PYEOF
+
+      - name: Skip when no recipe directories changed
+        if: steps.changed.outputs.count == '0'
+        run: echo "No recipe directories changed — skipping recipe validation."
+
+      - name: Validate each changed recipe
+        if: steps.changed.outputs.count != '0'
+        run: |
+          failed=0
+          for dir in ${{ steps.changed.outputs.dirs }}; do
+            echo "=== Validating: $dir ==="
+            python scripts/validate_recipe.py "$dir" || failed=1
+            echo ""
+          done
+          exit $failed
