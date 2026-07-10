@@ -4,7 +4,7 @@ A powerful AI-driven document analysis and podcast generation tool built with Ne
 
 ## ✨ Features
 
-- 📄 **Advanced PDF Parsing**: OCR processing using Mistral's latest OCR API
+- 📄 **Advanced PDF Parsing**: Document processing using Sarvam Document Intelligence
 - 🤖 **AI Script Generation**: Intelligent podcast script generation using Sarvam M model
 - 🌐 **Multi-Language Support**: Support for 11 Indian languages including Hindi, Tamil, Telugu, Bengali, and more
 - 🎙️ **High-Quality TTS**: AI-powered text-to-speech using Sarvam Bulbul-v2 TTS API
@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 - **APIs**: 
   - Sarvam M (Script Generation)
   - Sarvam Bulbul-v2 TTS (Text-to-Speech)
-  - Mistral OCR (PDF Parsing)
+  - Sarvam Vision (PDF Parsing)
 
 ### File Handling
 - **Upload**: React Dropzone
@@ -47,7 +47,6 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 
 - Node.js 18+ installed
 - Sarvam AI API key ([get one here](https://www.sarvam.ai/))
-- Mistral AI API key ([get one here](https://mistral.ai/))
 - Redis instance (Vercel Integration)
 - UploadThing account ([get one here](https://uploadthing.com/))
 - Inngest account ([get one here](https://inngest.com/))
@@ -70,9 +69,6 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
    ```env
    # Sarvam AI API Configuration
    SARVAM_API_KEY=your_sarvam_api_key_here
-   
-   # Mistral AI API Configuration
-   MISTRAL_API_KEY=your_mistral_api_key_here
    
    # Redis Configuration (for job tracking)
    Go to Vercel Integrations or use any redis local or hosted instance
@@ -101,7 +97,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 1. **Select Language**: Choose your preferred language for the podcast from the dropdown selector
 2. **Upload PDF**: Drag and drop or click to upload a PDF document
 3. **Background Processing**: The app will automatically:
-   - Parse the PDF content using Mistral OCR API
+   - Parse the PDF content using Sarvam Document Intelligence
    - Generate a conversational script using Sarvam M Model API
    - Generate high-quality audio using Bulbul-v2 TTS API
    - Process everything in the background using Inngest
@@ -130,7 +126,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 ## 🔌 API Endpoints
 
 ### `POST /api/parse-pdf`
-Parses PDF documents using Mistral OCR API.
+Parses PDF documents using Sarvam Document Intelligence.
 
 **Request**: FormData with PDF file
 **Response**: Extracted text content, images, and metadata
@@ -161,7 +157,7 @@ Handles cleanup of temporary audio files.
 ```
 ├── app/
 │   ├── api/
-│   │   ├── parse-pdf/route.ts           # PDF parsing with Mistral OCR
+│   │   ├── parse-pdf/route.ts           # PDF parsing with Sarvam Document Intelligence
 │   │   ├── generate-podcast/route.ts    # Podcast generation initiation
 │   │   ├── job-status/[jobId]/route.ts  # Job status tracking
 │   │   ├── cleanup-audio/route.ts       # Audio file cleanup
@@ -227,7 +223,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🔗 Links
 
 - [Sarvam AI Documentation](https://docs.sarvam.ai/)
-- [Mistral AI Documentation](https://docs.mistral.ai/)
 - [Inngest Documentation](https://www.inngest.com/docs)
 - [UploadThing Documentation](https://docs.uploadthing.com/)
 - [Next.js Documentation](https://nextjs.org/docs)
