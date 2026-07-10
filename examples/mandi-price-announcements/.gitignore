@@ -1,0 +1,5 @@
+outputs/*
+!outputs/.gitkeep
+sample_data/*
+!sample_data/.gitkeep
+.env
