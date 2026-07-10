@@ -87,6 +87,9 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Generated audio outputs from notebooks
+notebooks/**/*.wav
+
 # IPython
 profile_default/
 ipython_config.py

@@ -1,0 +1,8 @@
+.env
+sample_data/*
+!sample_data/.gitkeep
+outputs/*
+!outputs/.gitkeep
+*.xlsx
+*.pdf
+filled_form.html

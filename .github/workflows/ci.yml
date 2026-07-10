@@ -1,0 +1,90 @@
+name: Cookbook CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — Validate all .ipynb files are valid JSON with notebook structure
+  # ---------------------------------------------------------------------------
+  validate-notebooks:
+    name: Validate notebook JSON
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Check all notebooks are valid JSON
+        run: python scripts/validate_cookbook.py --only json
+
+  # ---------------------------------------------------------------------------
+  # Job 2 — Scan notebooks for hardcoded API key patterns
+  # ---------------------------------------------------------------------------
+  check-api-keys:
+    name: Check for hardcoded API keys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Scan for hardcoded sk_ and api_key patterns
+        run: python scripts/validate_cookbook.py --only api-keys
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — Scan print() calls for emoji characters
+  # ---------------------------------------------------------------------------
+  check-emojis:
+    name: Check for emojis in print statements
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Scan print() calls for emoji characters
+        run: python scripts/validate_cookbook.py --only emojis
+
+  # ---------------------------------------------------------------------------
+  # Job 4 — Verify each recipe folder has the required files
+  # ---------------------------------------------------------------------------
+  check-structure:
+    name: Check recipe folder structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Verify required files in each notebook recipe folder
+        run: python scripts/validate_cookbook.py --only structure
+
+  # ---------------------------------------------------------------------------
+  # Job 5 — Verify Pillow >= 12.1.1 if Pillow appears in requirements
+  # ---------------------------------------------------------------------------
+  check-pillow:
+    name: Check Pillow minimum version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Verify Pillow is pinned at >= 12.1.1 wherever it is used
+        run: python scripts/validate_cookbook.py --only pillow
