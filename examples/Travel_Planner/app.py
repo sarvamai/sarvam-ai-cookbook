@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
-from sarvam_utils import detect_language, translate_text, transliterate_text, generate_itinerary
+from sarvam_utils import (
+    detect_language,
+    translate_text,
+    transliterate_text,
+    generate_itinerary,
+    generate_travel_tips,
+)
 
 # Set page config
 st.set_page_config(
@@ -99,19 +105,8 @@ if submit_button and destination:
         st.markdown(itinerary)
         
         # Generate and display travel tips
-        tips_prompt = f"""Based on the destination {destination} and budget level {budget}, 
-        provide practical travel tips including:
-        - Best time to visit
-        - Local transportation options
-        - Cultural etiquette and customs
-        - Safety considerations
-        - Essential local phrases
-        - Packing recommendations"""
-        
-        tips_response = generate_itinerary(
+        tips_response = generate_travel_tips(
             destination=destination,
-            duration=1,
-            interests=["Practical Tips"],
             budget=budget,
             language=detected_lang
         )
@@ -135,4 +130,4 @@ st.markdown("""
 <div style='text-align: center'>
     <p>Powered by Sarvam AI | Your trusted travel companion</p>
 </div>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
