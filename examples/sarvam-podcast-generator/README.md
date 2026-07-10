@@ -125,7 +125,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 - 🇮🇳 Malayalam (മലയാളം) - `ml-IN`
 - 🇮🇳 Kannada (ಕನ್ನಡ) - `kn-IN`
 - 🇮🇳 Punjabi (ਪੰਜਾਬੀ) - `pa-IN`
-- 🇮🇳 Odia (ଓଡ଼ିଆ) - `od-IN`
+- 🇮🇳 Odia (ଓଡ଼ିଆ) - `or-IN`
 
 ## 🔌 API Endpoints
 
@@ -235,6 +235,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 Built with ❤️ using Sarvam AI's powerful multilingual models
-
 
 

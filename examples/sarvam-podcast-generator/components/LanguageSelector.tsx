@@ -21,7 +21,7 @@ const languages = [
   { value: 'gu-IN', label: 'Gujarati (ગુજરાતી)', flag: '🇮🇳', region: 'India' },
   { value: 'mr-IN', label: 'Marathi (मराठी)', flag: '🇮🇳', region: 'India' },
   { value: 'pa-IN', label: 'Punjabi (ਪੰਜਾਬੀ)', flag: '🇮🇳', region: 'India' },
-  { value: 'od-IN', label: 'Odia (ଓଡ଼ିଆ)', flag: '🇮🇳', region: 'India' }
+  { value: 'or-IN', label: 'Odia (ଓଡ଼ିଆ)', flag: '🇮🇳', region: 'India' }
 ];
 
 export function LanguageSelector({ selectedLanguage, onLanguageChange }: LanguageSelectorProps) {
@@ -84,4 +84,4 @@ export function LanguageSelector({ selectedLanguage, onLanguageChange }: Languag
       </div>
     </div>
   );
-} 
+}
