@@ -1,0 +1,6 @@
+sarvamai==0.1.24
+pytesseract>=0.3.10
+Pillow>=11.0.0
+openpyxl>=3.1.0
+matplotlib>=3.7.0
+python-dotenv>=1.0.0

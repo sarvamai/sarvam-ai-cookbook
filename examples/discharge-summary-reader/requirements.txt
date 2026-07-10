@@ -1,0 +1,3 @@
+sarvamai>=0.1.24
+python-dotenv>=1.0.0
+Pillow>=10.3.0
