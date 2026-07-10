@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import requests
 from dotenv import load_dotenv
 import os
@@ -30,10 +30,16 @@ async def read_root(request: Request):
 
 # Input model
 class UserAnswers(BaseModel):
-    answers: list[str]
+    answers: list[str] = Field(..., min_length=10, max_length=10)
 
 @app.post("/generate-song")
 async def generate_song(data: UserAnswers):
+    if not SARVAM_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="SARVAM_API_KEY is not configured. Set it in your environment or .env file."
+        )
+
     name = data.answers[0]
     color = data.answers[1]
     hobby = data.answers[2]
@@ -60,21 +66,28 @@ async def generate_song(data: UserAnswers):
         Embarrassing moment they secretly enjoy: {wish}
     """
 
-    response = requests.post(
-        "https://api.sarvam.ai/v1/chat/completions",
-        headers={
-            "api-subscription-key": SARVAM_API_KEY
-        },
-        json={
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "model": "sarvam-m"
-        },
-    )
+    try:
+        response = requests.post(
+            "https://api.sarvam.ai/v1/chat/completions",
+            headers={
+                "api-subscription-key": SARVAM_API_KEY
+            },
+            json={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "model": "sarvam-m"
+            },
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Sarvam API request failed: {exc}"
+        ) from exc
 
     result = response.json()
     content = result["choices"][0]["message"]["content"]
