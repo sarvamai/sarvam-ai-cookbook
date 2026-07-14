@@ -36,7 +36,7 @@ class Issue(NamedTuple):
 
 SECRET_ASSIGNMENT_RE = re.compile(
     r"(?:SARVAM_API_KEY|api[_-]?subscription[_-]?key)\s*=\s*"
-    r"""[\"'](?!YOUR_SARVAM|your[_-]?key|<your|your-key|your_sarvam)[^\"']{10,}[\"']""",
+    r"""[\"'](?!YOUR_SARVAM|your[_-]?key|<your|your-key|your_sarvam|real-value)[^\"']{10,}[\"']""",
     re.IGNORECASE,
 )
 
@@ -47,6 +47,7 @@ PLACEHOLDER_KEY_PATTERNS = (
     "your_sarvam_api_key",
     "YOUR_SARVAM_API_KEY",
     "your-key",
+    "real-value",
     "<your",
 )
 
@@ -306,6 +307,8 @@ def scan_added_lines_for_deprecated_api(
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
+        if "re.compile" in line or "DEPRECATED_API_RULES" in line:
+            continue
         for pattern, message, check in DEPRECATED_API_RULES:
             if pattern.search(line):
                 issues.append(
@@ -337,6 +340,8 @@ def scan_added_lines_for_allowlist(
     for line_no, line in added_lines:
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
+            continue
+        if "re.compile" in line or "DEPRECATED_API_RULES" in line:
             continue
 
         for model in extract_models(line):

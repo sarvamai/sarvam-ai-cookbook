@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: sarvam-rules-check
+        name: Sarvam API rules up to date
+        entry: python scripts/sync_sarvam_rules.py --check
+        language: system
+        pass_filenames: false
+        files: ^scripts/(sync_sarvam_rules\.py|sarvam_api_rules\.json)$
+
+      - id: sarvam-validate-pr
+        name: Sarvam PR validation (secrets + API allowlist)
+        entry: python scripts/validate_pr.py --base-ref main
+        language: system
+        pass_filenames: false
+        files: ^(examples/|notebooks/|scripts/)
+
+      - id: sarvam-pytest
+        name: Validator unit tests
+        entry: pytest tests/ -q --tb=no
+        language: system
+        pass_filenames: false
+        files: ^(scripts/|tests/)

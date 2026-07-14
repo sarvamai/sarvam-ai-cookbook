@@ -35,9 +35,8 @@ python scripts/validate_pr.py --base-ref main
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests/ -v
-python scripts/sync_sarvam_rules.py --check
-python scripts/validate_pr.py --base-ref main
+pre-commit install   # optional
+make check
 ```
 
 See [CONTRIBUTING.MD](CONTRIBUTING.MD) and [.github/PR_REVIEW_GUIDE.md](.github/PR_REVIEW_GUIDE.md).

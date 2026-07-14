@@ -145,32 +145,23 @@ Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
 
 #### Automated PR Checks
 
-CI runs automatically on every pull request. No API keys are needed for CI.
-
-**Option C — hybrid docs compliance**
-
-| Layer | Mechanism |
-|-------|-----------|
-| **Fast static rules** | Block known-bad patterns (hardcoded keys, `or-IN`, etc.) |
-| **Allowlist file** | `scripts/sarvam_api_rules.json` — allowed/deprecated models and language codes |
-| **Weekly sync** | GitHub Action refreshes the allowlist from [docs.sarvam.ai](https://docs.sarvam.ai) and opens a PR |
+CI runs on every pull request touching `examples/`, `notebooks/`, or `scripts/`. No API keys are needed.
 
 | Check | What it does |
 |-------|--------------|
-| `pytest tests/` | Unit tests for validation rules |
-| `scripts/sync_sarvam_rules.py --check` | Ensures allowlist matches canonical docs snapshot |
+| `pytest tests/` | Unit tests for all validation rules |
 | `scripts/validate_pr.py` | Secret scan + model/language allowlist on changed lines |
-| `scripts/validate_recipe.py` | Full recipe structure validation |
+| `scripts/validate_recipe.py` | Full structure check for new notebook recipes |
+| `scripts/sarvam_api_rules.json` | Allowed/deprecated models synced from [docs.sarvam.ai](https://docs.sarvam.ai) |
 
-Run the same checks locally:
+**Local workflow** (recommended before pushing):
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests/ -v
-python scripts/sync_sarvam_rules.py --check
-python scripts/validate_pr.py --base-ref main
+pre-commit install          # optional — runs checks automatically on commit
+make check                  # or: pytest + sync check + validate_pr
 ```
 
-When Sarvam docs change, update `scripts/sync_sarvam_rules.py` (`canonical_rules()`) and run `python scripts/sync_sarvam_rules.py` to refresh the allowlist.
+When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py`, then run `make sync-rules-write`. A weekly GitHub Action also opens a PR if the allowlist drifts.
 
-Maintainers: see [`.github/PR_REVIEW_GUIDE.md`](.github/PR_REVIEW_GUIDE.md) for the full review playbook.
+Maintainers: see [`.github/PR_REVIEW_GUIDE.md`](.github/PR_REVIEW_GUIDE.md).

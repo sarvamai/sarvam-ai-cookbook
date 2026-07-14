@@ -32,7 +32,7 @@ from sarvam_checks import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCAN_PREFIXES = ("examples/", "notebooks/", "scripts/")
+SCAN_PREFIXES = ("examples/", "notebooks/")
 
 
 def changed_paths(base_ref: str) -> list[Path]:

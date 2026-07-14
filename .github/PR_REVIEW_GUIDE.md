@@ -12,30 +12,24 @@ Every PR touching `examples/`, `notebooks/`, or `scripts/` runs three jobs:
 | **Validate PR changes** | `scripts/validate_pr.py` | Secrets, allowlist models/languages, client-side keys |
 | **Validate recipes** | `scripts/validate_recipe.py` | Full structure check for changed kebab-case recipe dirs |
 
-### Option C — keeping docs current
+### Docs compliance (allowlist)
 
 ```
-docs.sarvam.ai  ──weekly──▶  sync-sarvam-rules.yml
-                                    │
-                                    ▼
-                         scripts/sarvam_api_rules.json  ◀── PR allowlist
-                                    │
-                                    ▼
-                         validate_pr.py (every PR)
+docs.sarvam.ai  ──weekly──▶  sync-sarvam-rules.yml  ──▶  sarvam_api_rules.json
+                                                              │
+                                                              ▼
+                                                    validate_pr.py (every PR)
 ```
 
-1. **Static rules** — instant blocking checks (secrets, known-bad patterns)
-2. **Allowlist file** — `scripts/sarvam_api_rules.json` synced from docs
-3. **Weekly bot PR** — `.github/workflows/sync-sarvam-rules.yml` updates the allowlist
+- **Secrets** — blocked immediately (static patterns)
+- **Models & language codes** — checked against `scripts/sarvam_api_rules.json`
+- **Weekly bot PR** — keeps the allowlist aligned when docs change
 
 Run locally before pushing:
 
 ```bash
-pip install -r requirements-dev.txt
-pytest tests/ -v
-python scripts/sync_sarvam_rules.py --check
-python scripts/validate_pr.py --base-ref main
-python scripts/validate_recipe.py examples/my-recipe   # for new recipes
+make check
+python scripts/validate_recipe.py examples/my-recipe   # new recipes only
 ```
 
 ## Blocking issues (CI fails)

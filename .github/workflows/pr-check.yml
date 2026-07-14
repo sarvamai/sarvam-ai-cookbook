@@ -1,7 +1,7 @@
 name: PR Check
 
-# Validates contributor PRs for secret leaks, Sarvam API compliance, and
-# recipe structure. No API keys or external services are required.
+# Validates contributor PRs: secrets, Sarvam API allowlist, recipe structure.
+# No API keys or external services required.
 
 on:
   pull_request:
@@ -16,24 +16,8 @@ on:
       - "scripts/sarvam_api_rules.json"
 
 jobs:
-  unit-tests:
-    name: Validator unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
-
-      - name: Run pytest
-        run: pytest tests/ -v --tb=short
-
-  validate-pr:
-    name: Validate PR changes
+  validate:
+    name: Validate PR
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,32 +28,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install validator dependencies
-        run: pip install "packaging>=23.0"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Verify API allowlist is current
+        run: python scripts/sync_sarvam_rules.py --check
 
       - name: Validate changed examples and notebooks
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: |
-          python scripts/sync_sarvam_rules.py --check
-          python scripts/validate_pr.py --base-ref "$BASE_REF"
+        run: python scripts/validate_pr.py --base-ref "$BASE_REF"
 
-  validate-recipes:
-    name: Validate changed recipe directories
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install validator dependencies
-        run: pip install "packaging>=23.0"
-
-      - name: Validate each changed recipe directory
+      - name: Validate changed recipe directories
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
