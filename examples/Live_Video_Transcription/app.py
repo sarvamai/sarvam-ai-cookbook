@@ -151,7 +151,7 @@ class StreamingSession:
 
         if self.mode == "transcribe":
             conn = client.speech_to_text_streaming.connect(
-                language_code="unknown", model="saarika:v2.5"
+                language_code="unknown", model="saaras:v3"
             )
         else:
             conn = client.speech_to_text_translate_streaming.connect(model="saaras:v3")

@@ -15,9 +15,7 @@ class MultilingualChatbot:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = "https://api.sarvam.ai/v1/chat/completions"
-        self.translate_url = (
-            "https://api.sarvam.ai/translate/text"  # Add translation endpoint
-        )
+        self.translate_url = "https://api.sarvam.ai/translate"
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -67,11 +65,26 @@ class MultilingualChatbot:
             ):
                 return self.error_messages[target_lang]
 
+            # Map the internal language name to a Sarvam BCP-47 target code.
+            target_language_code = {
+                "english": "en-IN",
+                "hindi": "hi-IN",
+                "tamil": "ta-IN",
+                "telugu": "te-IN",
+                "kannada": "kn-IN",
+                "malayalam": "ml-IN",
+            }.get(target_lang, "en-IN")
+
             # Otherwise, use the translation API
             response = requests.post(
                 self.translate_url,
                 headers=self.headers,
-                json={"text": text, "target_language": target_lang},
+                json={
+                    "input": text,
+                    "source_language_code": "auto",
+                    "target_language_code": target_language_code,
+                    "model": "mayura:v1",
+                },
             )
             response.raise_for_status()
             return response.json()["translated_text"]
