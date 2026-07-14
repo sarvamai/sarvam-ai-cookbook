@@ -286,7 +286,7 @@ async function processAudioPipeline() {
             console.warn("LID failed or no lang_code, using default");
         }
         console.log("Pipeline: Lang info:", langInfo);
-        const langCodeForTTS = lidResult && lidResult.language_code ? lidResult.language_code : 'hi';
+        const langCodeForTTS = lidResult && lidResult.language_code ? lidResult.language_code : 'hi-IN';
 
         setStatus('Thinking (LLM)...');
         botText = await sendChat(asrText || "(No speech detected)"); 
@@ -380,7 +380,7 @@ async function sendLID(text) {
     } catch (error) {
         console.error("sendLID Error:", error);
         // Return a default or null to allow pipeline to continue if LID is not critical
-        return { language_code: 'hi', script_code: 'Deva' }; 
+        return { language_code: 'hi-IN', script_code: 'Deva' };
     }
 }
 
