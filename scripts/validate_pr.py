@@ -61,7 +61,7 @@ def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
 
 
 def validate_pr(base_ref: str) -> list[Issue]:
-    """Run PR-scoped security and API compliance checks on changed files."""
+    """Run PR-scoped secret checks on changed files."""
     return validate_pr_with_refs(base_ref, "HEAD")
 
 

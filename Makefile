@@ -1,6 +1,6 @@
-.PHONY: check test sync-rules validate-pr sync-rules-write
+.PHONY: check test sync-rules validate validate-pr sync-rules-write
 
-check: test sync-rules validate-pr
+check: test sync-rules validate
 
 test:
 	pip install -r requirements-dev.txt -q
@@ -9,8 +9,10 @@ test:
 sync-rules:
 	python scripts/sync_sarvam_rules.py --check
 
-validate-pr:
-	python scripts/validate_pr.py --base-ref main
+validate:
+	python scripts/ci_validate.py --base-ref main
+
+validate-pr: validate
 
 sync-rules-write:
 	python scripts/sync_sarvam_rules.py --verbose
