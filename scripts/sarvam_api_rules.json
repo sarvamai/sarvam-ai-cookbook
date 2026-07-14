@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "synced_at": "2026-07-14T08:46:18Z",
+  "docs_url": "https://docs.sarvam.ai",
+  "min_sarvamai_version": "0.1.24",
+  "models": {
+    "chat": {
+      "allowed": [
+        "sarvam-30b",
+        "sarvam-105b"
+      ],
+      "recommended": [
+        "sarvam-30b",
+        "sarvam-105b"
+      ],
+      "deprecated": [
+        "sarvam-m"
+      ]
+    },
+    "stt": {
+      "allowed": [
+        "saaras:v3"
+      ],
+      "recommended": [
+        "saaras:v3"
+      ],
+      "deprecated": [
+        "saarika:v2.5",
+        "saarika:v2"
+      ]
+    },
+    "tts": {
+      "allowed": [
+        "bulbul:v3",
+        "bulbul:v3-beta"
+      ],
+      "recommended": [
+        "bulbul:v3"
+      ],
+      "deprecated": [
+        "bulbul:v2"
+      ]
+    },
+    "translate": {
+      "allowed": [
+        "mayura:v1",
+        "sarvam-translate:v1"
+      ],
+      "recommended": [
+        "mayura:v1",
+        "sarvam-translate:v1"
+      ],
+      "deprecated": []
+    }
+  },
+  "language_codes": {
+    "stt": [
+      "en-IN",
+      "hi-IN",
+      "bn-IN",
+      "ta-IN",
+      "te-IN",
+      "gu-IN",
+      "kn-IN",
+      "ml-IN",
+      "mr-IN",
+      "pa-IN",
+      "od-IN",
+      "or-IN",
+      "as-IN",
+      "ur-IN",
+      "ne-IN",
+      "kok-IN",
+      "ks-IN",
+      "sd-IN",
+      "sa-IN",
+      "sat-IN",
+      "mni-IN",
+      "brx-IN",
+      "mai-IN",
+      "doi-IN"
+    ],
+    "tts": [
+      "en-IN",
+      "hi-IN",
+      "bn-IN",
+      "ta-IN",
+      "te-IN",
+      "gu-IN",
+      "kn-IN",
+      "ml-IN",
+      "mr-IN",
+      "pa-IN",
+      "od-IN",
+      "or-IN"
+    ],
+    "invalid": {}
+  },
+  "auth": {
+    "preferred_header": "api-subscription-key",
+    "env_var": "SARVAM_API_KEY"
+  }
+}

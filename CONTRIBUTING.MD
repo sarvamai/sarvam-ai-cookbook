@@ -23,6 +23,10 @@ All types of contributions are encouraged and valued. See the [Table of Contents
     - [Adding Examples](#adding-examples)
       - [Before Submitting an Example](#before-submitting-an-example)
       - [How Do I Submit an Example?](#how-do-i-submit-an-example)
+      - [Required Files (Notebook Recipes)](#required-files-notebook-recipes)
+      - [Security Requirements](#security-requirements)
+      - [Sarvam API Standards](#sarvam-api-standards)
+      - [Automated PR Checks](#automated-pr-checks)
 
 
 ## I Have a Question
@@ -91,3 +95,72 @@ If you want to add an example, please follow these steps:
 - Test your example before submitting a pull request.
 - Ensure it is not a duplicate or a derivative of an existing example.
 - Open a [Pull Request](https://github.com/sarvamai/sarvam-ai-cookbook/pulls) with a clear title and description of what your changes do. Make sure to reference the issue that your example solves, if applicable.
+
+#### Required Files (Notebook Recipes)
+
+New notebook-based examples must follow the layout in [`examples/TEMPLATE/`](examples/TEMPLATE/):
+
+| File | Purpose |
+|------|---------|
+| `<recipe_name>.ipynb` | Main notebook (snake_case name matching the directory) |
+| `README.md` | Setup, usage, and link to [Sarvam docs](https://docs.sarvam.ai) |
+| `requirements.txt` | Pinned dependencies (`package>=x.y.z`) |
+| `.env.example` | Placeholder env vars (`SARVAM_API_KEY=your-sarvam-api-key`) |
+| `.gitignore` | Must exclude `.env`, `sample_data/*`, `outputs/*` |
+| `sample_data/.gitkeep` | Placeholder for input files |
+| `outputs/.gitkeep` | Placeholder for generated output |
+
+Validate locally before opening a PR:
+
+```bash
+pip install "packaging>=23.0"
+python scripts/validate_recipe.py examples/your-recipe
+```
+
+#### Security Requirements
+
+These are **blocking** — PRs will fail CI if violated:
+
+- Never commit real API keys. Load `SARVAM_API_KEY` from the environment.
+- Never commit `.env` files. Provide `.env.example` with placeholders only.
+- Never expose keys in client-side / browser code. Use server routes or backends.
+- Clear notebook outputs before committing (outputs must not contain keys).
+- Rotate any key that was accidentally committed before opening a PR.
+
+See [Sarvam authentication docs](https://docs.sarvam.ai/api-reference-docs/authentication).
+
+#### Sarvam API Standards
+
+Use current models and endpoints from [docs.sarvam.ai](https://docs.sarvam.ai):
+
+| API | Use | Do not use |
+|-----|-----|------------|
+| Chat / LLM | `sarvam-30b` (default), `sarvam-105b` | `sarvam-m` (legacy) |
+| Speech-to-text | `saaras:v3` | `saarika:v2.5` (deprecated) |
+| Text-to-speech | `bulbul:v3` | `bulbul:v2` |
+| Language codes | BCP-47 with `-IN` suffix | e.g. `hi-IN`, `od-IN`, `or-IN` |
+| SDK | `sarvamai>=0.1.24` | Unpinned dependencies |
+
+Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
+
+#### Automated PR Checks
+
+CI runs on every pull request touching `examples/`, `notebooks/`, or validation scripts. No API key is needed to run checks.
+
+| Check | What it does |
+|-------|--------------|
+| `pytest tests/` | Unit tests for validation rules |
+| `scripts/validate_pr.py` | Secret scan on changed files (blocking) |
+| `scripts/validate_recipe.py` | Structure check for **new notebook recipes** (`.env.example` + `.ipynb`) only |
+| `scripts/sarvam_api_rules.json` | Current Sarvam models (reference; synced weekly) |
+
+**Local workflow** (recommended before pushing):
+
+```bash
+pip install -r requirements-dev.txt
+make check
+```
+
+When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py` and run `make sync-rules-write`. A weekly GitHub Action opens a PR if the reference file drifts.
+
+See [`.github/CI_CHECKS.md`](.github/CI_CHECKS.md) for details.
