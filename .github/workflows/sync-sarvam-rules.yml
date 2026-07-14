@@ -1,0 +1,53 @@
+name: Sync Sarvam API Rules
+
+# Weekly refresh of scripts/sarvam_api_rules.json from docs.sarvam.ai.
+# Opens a PR when the reference file changes.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync API rules reference
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sync sarvam_api_rules.json
+        run: python scripts/sync_sarvam_rules.py --verbose
+
+      - name: Verify rules file is valid JSON
+        run: python -c "import json; json.load(open('scripts/sarvam_api_rules.json'))"
+
+      - name: Run validator tests
+        run: |
+          pip install -r requirements-dev.txt
+          pytest tests/test_sarvam_rules.py tests/test_validate_pr.py -v --tb=short
+
+      - name: Create pull request if rules changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(rules): sync Sarvam API rules reference from docs"
+          title: "chore(rules): sync Sarvam API rules reference from docs"
+          body: |
+            Automated weekly sync of `scripts/sarvam_api_rules.json` from [docs.sarvam.ai](https://docs.sarvam.ai).
+
+            This file is a contributor reference for current models and language codes. CI does not block PRs on model names yet.
+
+            **Review checklist**
+            - [ ] Model lists match [Sarvam docs](https://docs.sarvam.ai)
+            - [ ] Deprecated models are correct
+            - [ ] Language codes are accurate
+          branch: bot/sync-sarvam-api-rules
+          delete-branch: true
