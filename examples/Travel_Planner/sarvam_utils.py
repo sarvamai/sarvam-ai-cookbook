@@ -103,9 +103,10 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
         headers=headers,
         json={
             "messages": messages,
-            "model": "sarvam-m",
+            "model": "sarvam-105b",
             "temperature": 0.7,
-            "max_tokens": 5000
+            "max_tokens": 4000,
+            "reasoning_effort": "low"
         }
     )
     
@@ -138,9 +139,10 @@ def generate_travel_tips(destination, budget, language="en"):
         headers=headers,
         json={
             "messages": messages,
-            "model": "sarvam-m",
+            "model": "sarvam-105b",
             "temperature": 0.7,
-            "max_tokens": 5000
+            "max_tokens": 4000,
+            "reasoning_effort": "low"
         }
     )
 
