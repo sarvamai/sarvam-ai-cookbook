@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 import asyncio
 import base64
-import tempfile
+import io
 from pydub import AudioSegment
 from sarvamai import AsyncSarvamAI
 import logging
@@ -34,11 +34,10 @@ def create_silence_base64():
     silence = AudioSegment.silent(duration=1000, frame_rate=16000)
     silence = silence.set_channels(1)
 
-    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
-        silence.export(tmp.name, format="wav")
-        with open(tmp.name, "rb") as f:
-            silence_bytes = f.read()
-            return base64.b64encode(silence_bytes).decode("utf-8")
+    # Use an in-memory buffer — NamedTemporaryFile can't be reopened on Windows
+    buf = io.BytesIO()
+    silence.export(buf, format="wav")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
 def combine_silence_and_audio(audio_base64):
@@ -57,11 +56,8 @@ def combine_silence_and_audio(audio_base64):
             f"Created silence: {len(silence)} ms, {silence.frame_rate}Hz, {silence.channels} channels"
         )
 
-        # Load the audio data
-        with tempfile.NamedTemporaryFile(suffix=".wav") as temp_audio:
-            temp_audio.write(audio_bytes)
-            temp_audio.flush()
-            audio_segment = AudioSegment.from_wav(temp_audio.name)
+        # Load the audio data from an in-memory buffer (Windows-safe)
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="wav")
 
         logger.info(
             f"Loaded audio segment: {len(audio_segment)} ms, {audio_segment.frame_rate}Hz, {audio_segment.channels} channels"
@@ -79,14 +75,12 @@ def combine_silence_and_audio(audio_base64):
             f"Combined audio: {len(combined_audio)} ms, {combined_audio.frame_rate}Hz, {combined_audio.channels} channels"
         )
 
-        # Export combined audio to Base64
-        with tempfile.NamedTemporaryFile(suffix=".wav") as temp_combined:
-            combined_audio.export(temp_combined.name, format="wav")
-            with open(temp_combined.name, "rb") as f:
-                combined_bytes = f.read()
-                result = base64.b64encode(combined_bytes).decode("utf-8")
-                logger.info(f"Final combined audio Base64 length: {len(result)}")
-                return result
+        # Export combined audio to Base64 via in-memory buffer (Windows-safe)
+        buf = io.BytesIO()
+        combined_audio.export(buf, format="wav")
+        result = base64.b64encode(buf.getvalue()).decode("utf-8")
+        logger.info(f"Final combined audio Base64 length: {len(result)}")
+        return result
 
     except Exception as e:
         logger.error(f"Error combining silence and audio: {e}")
@@ -96,155 +90,134 @@ def combine_silence_and_audio(audio_base64):
         return audio_base64  # Return original if combination fails
 
 
-def process_audio_chunk(audio_data):
-    """Process audio chunk with Sarvam AI - EXACT pattern from simple_transcriber.py"""
+def _extract_text(resp):
+    """Pull the transcript text out of a streaming response message."""
+    if hasattr(resp, "data") and resp.data is not None and hasattr(resp.data, "transcript"):
+        return resp.data.transcript or ""
+    if hasattr(resp, "transcript") and resp.transcript:
+        return resp.transcript
+    if hasattr(resp, "text") and resp.text:
+        return resp.text
+    if isinstance(resp, str):
+        return resp
+    return ""
 
-    async def async_transcribe():
+
+class StreamingSession:
+    """Maintains a single persistent Sarvam streaming connection for one client+mode.
+
+    The Sarvam streaming API expects ONE long-lived connection that audio is
+    continuously fed into, emitting transcripts as speech segments finalize.
+    We run a dedicated asyncio loop in a background thread: one task pulls audio
+    frames off a queue and forwards them, another loops on recv() and emits
+    results to the browser as they arrive.
+    """
+
+    def __init__(self, sid, mode):
+        self.sid = sid
+        self.mode = mode  # "transcribe" or "translate"
+        self.loop = asyncio.new_event_loop()
+        self.queue = asyncio.Queue()
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self._stopped = False
+
+    def start(self):
+        self.thread.start()
+
+    def send_audio(self, audio_b64):
+        if self._stopped:
+            return
+        # Scheduled onto the session's own loop from the Socket.IO thread.
+        asyncio.run_coroutine_threadsafe(self.queue.put(audio_b64), self.loop)
+
+    def stop(self):
+        if self._stopped:
+            return
+        self._stopped = True
+        asyncio.run_coroutine_threadsafe(self.queue.put(None), self.loop)
+
+    def _run(self):
+        asyncio.set_event_loop(self.loop)
         try:
-            logger.info("Creating Sarvam AI client...")
-            client = AsyncSarvamAI(api_subscription_key=SARVAM_API_KEY)
-
-            # Create silence (following simple_transcriber.py exactly)
-            silence_b64 = create_silence_base64()
-            logger.info(f"Audio data length: {len(audio_data)} chars")
-            logger.info(f"Silence length: {len(silence_b64)} chars")
-
-            logger.info("Connecting to Sarvam AI streaming...")
-            async with client.speech_to_text_streaming.connect(
-                language_code="unknown",
-            ) as ws:
-                # Send audio data FIRST (exactly like simple_transcriber.py)
-                logger.info("✅ Sending audio data first...")
-                await ws.transcribe(audio=audio_data)
-
-                # Send silence SECOND (exactly like simple_transcriber.py)
-                logger.info("✅ Sending silence second...")
-                await ws.transcribe(audio=silence_b64)
-
-                logger.info("✅ Sent audio + silence")
-
-                # Receive response (exactly like simple_transcriber.py)
-                logger.info("Waiting for response...")
-                resp = await ws.recv()
-                logger.info(f"✅ Response: {resp}")
-
-                # Extract transcript (exactly like simple_transcriber.py)
-                transcription = ""
-                if hasattr(resp, "data") and hasattr(resp.data, "transcript"):
-                    transcription = resp.data.transcript
-                elif hasattr(resp, "transcript") and resp.transcript:
-                    transcription = resp.transcript
-                elif hasattr(resp, "text") and resp.text:
-                    transcription = resp.text
-                elif isinstance(resp, str):
-                    transcription = resp
-
-                logger.info(f"✅ Extracted: '{transcription}'")
-                return transcription
-
+            self.loop.run_until_complete(self._session())
         except Exception as e:
-            logger.error(f"❌ Transcription error: {e}")
-            import traceback
+            logger.error(f"[{self.mode}] session loop error: {e}")
+        finally:
+            self.loop.close()
 
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return ""
+    async def _session(self):
+        client = AsyncSarvamAI(api_subscription_key=SARVAM_API_KEY)
+        logger.info(f"[{self.mode}] opening persistent streaming connection...")
 
-    # Run async function in event loop
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(async_transcribe())
-        loop.close()
-        return result
-    except Exception as e:
-        logger.error(f"Event loop error: {e}")
-        return ""
+        if self.mode == "transcribe":
+            conn = client.speech_to_text_streaming.connect(
+                language_code="unknown", model="saaras:v3"
+            )
+        else:
+            conn = client.speech_to_text_translate_streaming.connect(model="saaras:v3")
 
+        async with conn as ws:
+            logger.info(f"[{self.mode}] connected")
+            receiver = asyncio.create_task(self._receive(ws))
+            try:
+                while True:
+                    audio_b64 = await self.queue.get()
+                    if audio_b64 is None:  # stop sentinel
+                        break
+                    if self.mode == "transcribe":
+                        await ws.transcribe(audio=audio_b64)
+                    else:
+                        await ws.translate(audio=audio_b64)
 
-def process_audio_chunk_translation(audio_data):
-    """Process audio chunk with Sarvam AI translation streaming"""
-    import time
+                # Flush any buffered audio so the final segment is emitted.
+                await ws.flush()
+                # Give the receiver a moment to drain remaining transcripts.
+                await asyncio.sleep(2)
+            finally:
+                receiver.cancel()
+                logger.info(f"[{self.mode}] connection closed")
 
-    start_time = time.time()
-
-    async def async_translate():
+    async def _receive(self, ws):
+        """Continuously read transcript messages and push them to the browser."""
         try:
-            current_time = time.strftime("%H:%M:%S")
-            logger.info(f"🌍 TRANSLATION START - chunk at {current_time}")
-            client = AsyncSarvamAI(api_subscription_key=SARVAM_API_KEY)
-
-            # Create silence (following same pattern as transcription)
-            silence_b64 = create_silence_base64()
-            logger.info(f"🌍 Audio data length: {len(audio_data)} chars")
-            logger.info(f"🌍 Silence length: {len(silence_b64)} chars")
-
-            logger.info("🌍 Connecting to Sarvam AI translation streaming...")
-            connect_start = time.time()
-            async with client.speech_to_text_translate_streaming.connect() as ws:
-                connect_time = time.time() - connect_start
-                logger.info(f"🌍 Connected in {connect_time:.2f}s")
-
-                # Send audio for translation FIRST
-                send_start = time.time()
-                logger.info("🌍 Sending audio for translation...")
-                await ws.translate(audio=audio_data)
-                send_time = time.time() - send_start
-                logger.info(f"🌍 Audio sent in {send_time:.2f}s")
-
-                # Send silence SECOND
-                logger.info("🌍 Sending silence...")
-                await ws.translate(audio=silence_b64)
-                logger.info("🌍 Silence sent")
-
-                # Receive translation response
-                recv_start = time.time()
-                logger.info("🌍 Waiting for translation response...")
+            while True:
                 resp = await ws.recv()
-                recv_time = time.time() - recv_start
-                logger.info(f"🌍 Response received in {recv_time:.2f}s")
-                logger.info(f"🌍 Raw translation response: {resp}")
-
-                # Extract translation
-                translation = ""
-                if hasattr(resp, "data") and hasattr(resp.data, "transcript"):
-                    translation = resp.data.transcript
-                elif hasattr(resp, "transcript") and resp.transcript:
-                    translation = resp.transcript
-                elif hasattr(resp, "text") and resp.text:
-                    translation = resp.text
-                elif isinstance(resp, str):
-                    translation = resp
-
-                total_time = time.time() - start_time
-                logger.info(f"🌍 TRANSLATION SUCCESS - Total time: {total_time:.2f}s")
-                logger.info(f"🌍 Extracted translation: '{translation}'")
-                return translation
-
+                text = _extract_text(resp)
+                if text and text.strip():
+                    logger.info(f"[{self.mode}] ✅ {text}")
+                    emit_streaming_result(self.sid, self.mode, text.strip())
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            total_time = time.time() - start_time
-            logger.error(f"🌍 TRANSLATION ERROR after {total_time:.2f}s: {e}")
-            import traceback
+            logger.info(f"[{self.mode}] receiver ended: {e}")
 
-            logger.error(f"🌍 Traceback: {traceback.format_exc()}")
-            return ""
 
-    # Run async function in event loop
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(async_translate())
-        loop.close()
-        return result
-    except Exception as e:
-        total_time = time.time() - start_time
-        logger.error(f"🌍 Event loop error after {total_time:.2f}s: {e}")
-        return ""
+# Active streaming sessions keyed by (sid, mode)
+streaming_sessions = {}
+
+
+def emit_streaming_result(sid, mode, text):
+    """Emit a transcript/translation result to a specific client."""
+    result_data = {"text": text, "status": "completed"}
+    if mode == "transcribe":
+        add_transcription_to_queue(result_data)
+        event = "transcription_result"
+    else:
+        add_translation_to_queue(result_data)
+        event = "translation_result"
+
+    with app.app_context():
+        socketio.emit(event, result_data, to=sid)
 
 
 @app.route("/")
 def index():
-    """Serve the main page"""
-    return render_template("index.html")
+    """Serve the main page (no-cache so JS updates always load)"""
+    resp = app.make_response(render_template("index.html"))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 @socketio.on("connect")
@@ -260,6 +233,39 @@ def handle_disconnect():
     """Handle client disconnection"""
     logger.info(f"Client disconnected: {request.sid}")
     active_clients.discard(request.sid)
+    # Tear down any streaming sessions this client owned
+    for mode in ("transcribe", "translate"):
+        session = streaming_sessions.pop((request.sid, mode), None)
+        if session:
+            session.stop()
+
+
+@socketio.on("start_stream")
+def handle_start_stream(data):
+    """Open a persistent streaming session for this client + mode."""
+    mode = data.get("mode")
+    if mode not in ("transcribe", "translate"):
+        emit("error", {"message": f"Unknown stream mode: {mode}"})
+        return
+
+    key = (request.sid, mode)
+    if key in streaming_sessions:
+        return  # already running
+
+    logger.info(f"Starting {mode} stream for {request.sid}")
+    session = StreamingSession(request.sid, mode)
+    streaming_sessions[key] = session
+    session.start()
+
+
+@socketio.on("stop_stream")
+def handle_stop_stream(data):
+    """Close a streaming session for this client + mode."""
+    mode = data.get("mode")
+    session = streaming_sessions.pop((request.sid, mode), None)
+    if session:
+        logger.info(f"Stopping {mode} stream for {request.sid}")
+        session.stop()
 
 
 @socketio.on("video_control")
@@ -338,195 +344,44 @@ def translation_stats():
 
 @socketio.on("audio_chunk")
 def handle_audio_chunk(data):
-    """Handle incoming audio chunk from client"""
+    """Forward an incoming audio chunk into the persistent transcription session."""
     try:
-        logger.info("AUDIO_CHUNK event received!")
-
-        # Get audio data and metadata
         audio_base64 = data.get("audio")
-        timestamp = data.get("timestamp", 0)
-        chunk_name = data.get("chunkName", "Unknown")
-
-        # Check if chunk was already processed
-        if chunk_name in processed_chunks:
-            logger.info(f"Skipping already processed chunk: {chunk_name}")
-            return
-
         if not audio_base64:
-            emit("error", {"message": "No audio data received"})
             return
 
-        logger.info(f"Processing audio chunk: {chunk_name}")
+        session = streaming_sessions.get((request.sid, "transcribe"))
+        if session is None:
+            # No active session — client may not have sent start_stream yet.
+            return
 
-        # Add to processed chunks set
-        processed_chunks.add(chunk_name)
-
-        # Keep set size manageable by removing old chunks
-        if len(processed_chunks) > 1000:
-            processed_chunks.clear()  # Reset when too many chunks accumulated
-
-        # Emit processing status
-        emit("transcription_status", {"status": "processing", "timestamp": timestamp})
-
-        # Process transcription in background thread
-        def transcribe_thread():
-            transcription = process_audio_chunk(audio_base64)
-
-            if transcription and transcription.strip():
-                logger.info(f"SUCCESS - Transcription: '{transcription}'")
-                result_data = {
-                    "text": transcription,
-                    "timestamp": timestamp,
-                    "status": "completed",
-                    "chunkName": chunk_name,
-                }
-
-                # Add to polling queue as backup
-                add_transcription_to_queue(result_data)
-
-                # Use app context for background thread emission
-                with app.app_context():
-                    # Emit to all active clients by session ID
-                    logger.info(f"Active clients: {len(active_clients)}")
-
-                    if not active_clients:
-                        logger.error("NO ACTIVE CLIENTS TO EMIT TO!")
-                        return
-
-                    for client_sid in active_clients.copy():
-                        try:
-                            socketio.emit(
-                                "transcription_result", result_data, to=client_sid
-                            )
-                            logger.info(f"Emitted to client {client_sid}")
-                        except Exception as e:
-                            logger.error(f"Failed to emit to {client_sid}: {e}")
-
-        # Start transcription in background
-        thread = threading.Thread(target=transcribe_thread)
-        thread.daemon = True
-        thread.start()
+        session.send_audio(audio_base64)
 
     except Exception as e:
-        logger.error(f"Error processing audio chunk: {e}")
+        logger.error(f"Error forwarding audio chunk: {e}")
         emit("error", {"message": f"Processing error: {str(e)}"})
 
 
 @socketio.on("translation_chunk")
 def handle_translation_chunk(data):
-    """Handle incoming audio chunk for translation"""
-    global translation_chunk_counter, translation_processing_times
-
+    """Forward an incoming audio chunk into the persistent translation session."""
     try:
-        import time
-
-        chunk_received_time = time.time()
-        translation_chunk_counter += 1
-
-        # Get audio data and metadata
         audio_base64 = data.get("audio")
-        timestamp = data.get("timestamp", 0)
-        chunk_name = data.get("chunkName", "Unknown")
-
-        # Check if chunk was already processed
-        if chunk_name in processed_chunks:
-            logger.info(
-                f"🌍 Skipping already processed translation chunk: {chunk_name}"
-            )
-            return
-
         if not audio_base64:
-            emit("error", {"message": "No audio data received for translation"})
             return
 
-        logger.info(f"🌍 Processing translation chunk: {chunk_name}")
+        session = streaming_sessions.get((request.sid, "translate"))
+        if session is None:
+            return
 
-        # Add to processed chunks set
-        processed_chunks.add(chunk_name)
-
-        # Emit processing status
-        emit("translation_status", {"status": "processing", "timestamp": timestamp})
-
-        # Process translation in background thread
-        def translate_thread():
-            thread_start_time = time.time()
-            logger.info(
-                f"🌍 Starting translation thread for chunk #{translation_chunk_counter}"
-            )
-
-            translation = process_audio_chunk_translation(audio_base64)
-
-            thread_end_time = time.time()
-            processing_time = thread_end_time - chunk_received_time
-            translation_processing_times.append(processing_time)
-
-            # Keep only last 10 processing times
-            if len(translation_processing_times) > 10:
-                translation_processing_times.pop(0)
-
-            avg_processing_time = sum(translation_processing_times) / len(
-                translation_processing_times
-            )
-
-            if translation and translation.strip():
-                logger.info(
-                    f"🌍 SUCCESS - Translation #{translation_chunk_counter}: '{translation}'"
-                )
-                result_data = {
-                    "text": translation,
-                    "timestamp": timestamp,
-                    "status": "completed",
-                    "chunkName": chunk_name,
-                    "chunkNumber": translation_chunk_counter,
-                    "processingTime": processing_time,
-                }
-
-                # Add to polling queue as backup
-                add_translation_to_queue(result_data)
-
-                # Use app context for background thread emission
-                with app.app_context():
-                    # Emit to all active clients by session ID
-                    logger.info(f"🌍 Active clients: {len(active_clients)}")
-
-                    if not active_clients:
-                        logger.error("🌍 NO ACTIVE CLIENTS TO EMIT TO!")
-                        return
-
-                    for client_sid in active_clients.copy():
-                        try:
-                            socketio.emit(
-                                "translation_result", result_data, to=client_sid
-                            )
-                            logger.info(
-                                f"🌍 Emitted translation #{translation_chunk_counter} to client {client_sid}"
-                            )
-                        except Exception as e:
-                            logger.error(
-                                f"🌍 Failed to emit translation #{translation_chunk_counter} to {client_sid}: {e}"
-                            )
-            else:
-                logger.warning(
-                    f"🌍 EMPTY TRANSLATION for chunk #{translation_chunk_counter}"
-                )
-
-        # Start translation in background
-        thread = threading.Thread(target=translate_thread)
-        thread.daemon = True
-        thread.start()
-
-        logger.info(
-            f"🌍 Translation thread started for chunk #{translation_chunk_counter}"
-        )
+        session.send_audio(audio_base64)
 
     except Exception as e:
-        logger.error(
-            f"🌍 Error processing translation chunk #{translation_chunk_counter}: {e}"
-        )
+        logger.error(f"Error forwarding translation chunk: {e}")
         emit("error", {"message": f"Translation processing error: {str(e)}"})
 
 
 if __name__ == "__main__":
     logger.info("Starting Live Transcription Demo Server...")
     logger.info("Open http://localhost:5001 in your browser")
-    socketio.run(app, debug=False, host="0.0.0.0", port=5001)
+    socketio.run(app, debug=False, host="127.0.0.1", port=5001, allow_unsafe_werkzeug=True)
