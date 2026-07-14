@@ -79,7 +79,11 @@ async def generate_song(data: UserAnswers):
                         "content": prompt
                     }
                 ],
-                "model": "sarvam-m"
+                "model": "sarvam-105b",
+                "max_tokens": 4000,
+                # Keep reasoning light so the token budget goes to the song, not
+                # internal thinking (otherwise content can come back empty).
+                "reasoning_effort": "low"
             },
         )
         response.raise_for_status()
