@@ -1,0 +1,64 @@
+name: PR Check
+
+# Validates contributor PRs and posts actionable comments on failure.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "notebooks/**"
+      - "scripts/**"
+      - "tests/**"
+      - "requirements-dev.txt"
+      - ".github/workflows/pr-check.yml"
+      - "scripts/sarvam_api_rules.json"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Verify API rules reference is current
+        run: python scripts/sync_sarvam_rules.py --check
+
+      - name: Run full validation
+        id: validate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          python scripts/ci_validate.py --base-ref "$BASE_REF" --output validation-results.json
+        continue-on-error: true
+
+      - name: Post validation summary on failure
+        if: steps.validate.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/pr_comment.py \
+            --input validation-results.json \
+            --output pr-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file pr-comment.md
+
+      - name: Fail if validation failed
+        if: steps.validate.outcome == 'failure'
+        run: exit 1

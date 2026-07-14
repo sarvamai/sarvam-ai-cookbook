@@ -131,24 +131,37 @@
                 answers.push(formData.get(`answer${i}`));
             }
 
-            const response = await fetch("/generate-song", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ answers: answers })
-            });
-
-            const data = await response.json();
-
-            songLines.innerHTML = "";
-
-            const p = document.createElement("p");
-            p.innerHTML = data.quotes.replace(/\n/g, "<br>");  // preserve line breaks
-            p.classList.add("song-line");
-            songLines.appendChild(p);
-
+            // Show immediate feedback — generating the song can take several seconds.
             outputBox.style.display = "block";
+            songLines.innerHTML = '<p class="song-line">🎶 Generating your song… this can take a few seconds.</p>';
+            outputBox.scrollIntoView({ behavior: "smooth" });
+
+            try {
+                const response = await fetch("/generate-song", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ answers: answers })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+
+                const data = await response.json();
+                const song = (data && data.quotes) ? data.quotes : "No song was returned. Please try again.";
+
+                songLines.innerHTML = "";
+                const p = document.createElement("p");
+                p.innerHTML = song.replace(/\n/g, "<br>");  // preserve line breaks
+                p.classList.add("song-line");
+                songLines.appendChild(p);
+            } catch (err) {
+                songLines.innerHTML = '<p class="song-line">😕 Could not generate the song: ' + err.message + '</p>';
+            }
+
+            outputBox.scrollIntoView({ behavior: "smooth" });
         });
     </script>
 </body>
