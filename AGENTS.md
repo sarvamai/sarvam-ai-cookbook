@@ -18,7 +18,7 @@ Current models are defined in `scripts/sarvam_api_rules.json` (synced from [docs
 | STT | `saaras:v3` | `saarika:v2.5` |
 | TTS | `bulbul:v3` | `bulbul:v2` |
 
-Use BCP-47 language codes with `-IN` suffix. Odia: `od-IN` (not `or-IN`).
+Use BCP-47 language codes with `-IN` suffix (e.g. `hi-IN`, `od-IN`, `or-IN`).
 
 Prefer the `sarvamai` SDK (`sarvamai>=0.1.24`).
 

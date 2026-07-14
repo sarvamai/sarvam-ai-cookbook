@@ -39,7 +39,6 @@ Use only current models. CI flags **newly added lines** that reference retired m
 - `sarvam-m` → use `sarvam-30b` or `sarvam-105b`
 - `saarika:v2` / `saarika:v2.5` → use `saaras:v3`
 - `bulbul:v2` → use `bulbul:v3`
-- Invalid language codes (e.g. `or-IN` — use `od-IN`)
 
 ### Recipe structure
 - Missing required files — see `examples/TEMPLATE/`

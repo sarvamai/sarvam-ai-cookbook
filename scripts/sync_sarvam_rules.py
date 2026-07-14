@@ -62,15 +62,15 @@ def canonical_rules() -> dict:
         "language_codes": {
             "stt": [
                 "en-IN", "hi-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN", "kn-IN",
-                "ml-IN", "mr-IN", "pa-IN", "od-IN", "as-IN", "ur-IN", "ne-IN",
+                "ml-IN", "mr-IN", "pa-IN", "od-IN", "or-IN", "as-IN", "ur-IN", "ne-IN",
                 "kok-IN", "ks-IN", "sd-IN", "sa-IN", "sat-IN", "mni-IN", "brx-IN",
                 "mai-IN", "doi-IN",
             ],
             "tts": [
                 "en-IN", "hi-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN", "kn-IN",
-                "ml-IN", "mr-IN", "pa-IN", "od-IN",
+                "ml-IN", "mr-IN", "pa-IN", "od-IN", "or-IN",
             ],
-            "invalid": {"or-IN": "od-IN"},
+            "invalid": {},
         },
         "auth": {
             "preferred_header": "api-subscription-key",

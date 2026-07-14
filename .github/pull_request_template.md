@@ -22,7 +22,7 @@
   - Chat: `sarvam-30b` or `sarvam-105b` (not `sarvam-m`)
   - STT: `saaras:v3` (not `saarika:v2.5`)
   - TTS: `bulbul:v3` (not `bulbul:v2`)
-- [ ] Language codes use BCP-47 with `-IN` suffix (Odia: `od-IN`, not `or-IN`)
+- [ ] Language codes use BCP-47 with `-IN` suffix (e.g. `hi-IN`, `od-IN`, `or-IN`)
 - [ ] Prefers the official `sarvamai` SDK where applicable (`sarvamai>=0.1.24`)
 - [ ] `make check` passes locally (see [CI_CHECKS.md](.github/CI_CHECKS.md))
 

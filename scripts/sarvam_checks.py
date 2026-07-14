@@ -70,15 +70,6 @@ BINARY_SUFFIXES: frozenset[str] = frozenset(
 
 SCAN_SKIP_NAMES = frozenset({".gitkeep", "package-lock.json"})
 
-# Static patterns not reliably captured by model/language extractors.
-DEPRECATED_API_RULES: list[tuple[re.Pattern[str], str, str]] = [
-    (
-        re.compile(r"\bor-IN\b"),
-        "Invalid Odia language code 'or-IN' — use od-IN per Sarvam docs",
-        "language-code",
-    ),
-]
-
 LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 
 

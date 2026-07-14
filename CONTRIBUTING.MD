@@ -138,7 +138,7 @@ Use current models and endpoints from [docs.sarvam.ai](https://docs.sarvam.ai):
 | Chat / LLM | `sarvam-30b` (default), `sarvam-105b` | `sarvam-m` (legacy) |
 | Speech-to-text | `saaras:v3` | `saarika:v2.5` (deprecated) |
 | Text-to-speech | `bulbul:v3` | `bulbul:v2` |
-| Language codes | BCP-47 with `-IN` suffix | `or-IN` for Odia (use `od-IN`) |
+| Language codes | BCP-47 with `-IN` suffix | e.g. `hi-IN`, `od-IN`, `or-IN` |
 | SDK | `sarvamai>=0.1.24` | Unpinned dependencies |
 
 Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "synced_at": "2026-07-14T08:34:00Z",
+  "synced_at": "2026-07-14T08:46:18Z",
   "docs_url": "https://docs.sarvam.ai",
   "min_sarvamai_version": "0.1.24",
   "models": {
@@ -66,6 +66,7 @@
       "mr-IN",
       "pa-IN",
       "od-IN",
+      "or-IN",
       "as-IN",
       "ur-IN",
       "ne-IN",
@@ -90,11 +91,10 @@
       "ml-IN",
       "mr-IN",
       "pa-IN",
-      "od-IN"
+      "od-IN",
+      "or-IN"
     ],
-    "invalid": {
-      "or-IN": "od-IN"
-    }
+    "invalid": {}
   },
   "auth": {
     "preferred_header": "api-subscription-key",
