@@ -39,17 +39,17 @@ def canonical_rules() -> dict:
         "min_sarvamai_version": "0.1.24",
         "models": {
             "chat": {
-                "allowed": ["sarvam-30b", "sarvam-105b", "sarvam-m"],
+                "allowed": ["sarvam-30b", "sarvam-105b"],
                 "recommended": ["sarvam-30b", "sarvam-105b"],
                 "deprecated": ["sarvam-m"],
             },
             "stt": {
-                "allowed": ["saaras:v3", "saarika:v2.5"],
+                "allowed": ["saaras:v3"],
                 "recommended": ["saaras:v3"],
-                "deprecated": ["saarika:v2.5"],
+                "deprecated": ["saarika:v2.5", "saarika:v2"],
             },
             "tts": {
-                "allowed": ["bulbul:v3", "bulbul:v3-beta", "bulbul:v2"],
+                "allowed": ["bulbul:v3", "bulbul:v3-beta"],
                 "recommended": ["bulbul:v3"],
                 "deprecated": ["bulbul:v2"],
             },

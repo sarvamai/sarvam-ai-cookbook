@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
-  "synced_at": "2026-07-14T08:06:56Z",
+  "synced_at": "2026-07-14T08:34:00Z",
   "docs_url": "https://docs.sarvam.ai",
   "min_sarvamai_version": "0.1.24",
   "models": {
     "chat": {
       "allowed": [
         "sarvam-30b",
-        "sarvam-105b",
-        "sarvam-m"
+        "sarvam-105b"
       ],
       "recommended": [
         "sarvam-30b",
@@ -20,21 +19,20 @@
     },
     "stt": {
       "allowed": [
-        "saaras:v3",
-        "saarika:v2.5"
+        "saaras:v3"
       ],
       "recommended": [
         "saaras:v3"
       ],
       "deprecated": [
-        "saarika:v2.5"
+        "saarika:v2.5",
+        "saarika:v2"
       ]
     },
     "tts": {
       "allowed": [
         "bulbul:v3",
-        "bulbul:v3-beta",
-        "bulbul:v2"
+        "bulbul:v3-beta"
       ],
       "recommended": [
         "bulbul:v3"

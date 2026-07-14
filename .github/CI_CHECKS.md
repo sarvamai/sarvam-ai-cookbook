@@ -16,6 +16,8 @@ Every PR touching `examples/`, `notebooks/`, or `scripts/` runs:
 
 Model and language rules come from [docs.sarvam.ai](https://docs.sarvam.ai) via `scripts/sarvam_api_rules.json`.
 
+**Why deprecated model names appear in the rules file:** they are listed under `deprecated` so CI can **reject new code** that uses retired models (`sarvam-m`, `saarika:v2`, `bulbul:v2`). They are not valid for new examples.
+
 ## Run checks locally
 
 ```bash
@@ -33,8 +35,10 @@ python scripts/validate_recipe.py examples/your-recipe   # new recipes only
 - Client-side (`"use client"`) references to `SARVAM_API_KEY`
 
 ### Sarvam API (recipes & notebooks)
-- Deprecated models: `sarvam-m`, `saarika:v2.5`, `bulbul:v2`
-- Unknown model names not in the allowlist
+Use only current models. CI flags **newly added lines** that reference retired models:
+- `sarvam-m` → use `sarvam-30b` or `sarvam-105b`
+- `saarika:v2` / `saarika:v2.5` → use `saaras:v3`
+- `bulbul:v2` → use `bulbul:v3`
 - Invalid language codes (e.g. `or-IN` — use `od-IN`)
 
 ### Recipe structure
