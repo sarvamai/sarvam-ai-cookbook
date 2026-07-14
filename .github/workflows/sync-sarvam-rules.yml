@@ -1,7 +1,7 @@
 name: Sync Sarvam API Rules
 
-# Option C — weekly refresh of scripts/sarvam_api_rules.json from docs.sarvam.ai.
-# Opens a PR when the allowlist changes so PR validation stays current.
+# Weekly refresh of scripts/sarvam_api_rules.json from docs.sarvam.ai.
+# Opens a PR when the allowlist changes so contributor validation stays current.
 
 on:
   schedule:

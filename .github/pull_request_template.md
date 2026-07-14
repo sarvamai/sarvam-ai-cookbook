@@ -24,7 +24,7 @@
   - TTS: `bulbul:v3` (not `bulbul:v2`)
 - [ ] Language codes use BCP-47 with `-IN` suffix (Odia: `od-IN`, not `or-IN`)
 - [ ] Prefers the official `sarvamai` SDK where applicable (`sarvamai>=0.1.24`)
-- [ ] `python scripts/sync_sarvam_rules.py --check` passes locally
+- [ ] `make check` passes locally (see [CI_CHECKS.md](.github/CI_CHECKS.md))
 
 ## Test plan
 
