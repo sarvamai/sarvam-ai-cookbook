@@ -94,7 +94,9 @@ async def generate_song(data: UserAnswers):
         ) from exc
 
     result = response.json()
-    content = result["choices"][0]["message"]["content"]
-    print(content)
+    content = result.get("choices", [{}])[0].get("message", {}).get("content")
+    if not content:
+        return {"quotes": "The song came back empty — please try again."}
 
+    print(content)
     return {"quotes": content}

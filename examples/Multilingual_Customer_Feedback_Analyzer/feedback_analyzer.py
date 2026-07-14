@@ -12,7 +12,7 @@ class FeedbackAnalyzer:
         self.base_url = "https://api.sarvam.ai"
         self.headers = {
             "api-subscription-key": api_key,
-            "Content-Type": "application/x-www-form-urlencoded" 
+            "Content-Type": "application/json"
         }
 
     def detect_language(self, text: str) -> Dict:
@@ -59,59 +59,60 @@ class FeedbackAnalyzer:
         return response.json()["translated_text"]
 
     def analyze_text(self, text: str) -> Dict:
-        """Analyze text using text analytics API."""
-        url = f"{self.base_url}/text-analytics"
-        
-        # Define questions as per API documentation
-        questions = [
-            {
-                "id": "q001",
-                "text": "What is the overall sentiment of this feedback?",
-                "type": "enum",
-                "properties": {
-                    "options": ["positive", "negative", "neutral"]
-                }
-            },
-            {
-                "id": "q002",
-                "text": "What is the main topic of this feedback?",
-                "type": "short answer"
-            },
-            {
-                "id": "q003",
-                "text": "What are the key points mentioned in this feedback?",
-                "type": "long answer"
-            },
-            {
-                "id": "q004",
-                "text": "What areas of improvement are mentioned in this feedback?",
-                "type": "long answer"
-            }
-        ]
-        
-        # Format data as per API documentation
-        data = {
-            "text": text,
-            "questions": json.dumps(questions)  # Convert questions to JSON string
-        }
-        
-        # Set headers for this specific request
+        """Analyze feedback using the Chat Completions API.
+
+        Returns a dict with keys: sentiment, main_topic, key_points,
+        improvement_areas. (Sarvam has no dedicated text-analytics endpoint,
+        so we prompt a chat model to return structured JSON.)
+        """
+        url = f"{self.base_url}/v1/chat/completions"
         headers = {
-            "api-subscription-key": self.api_key,
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
-        
-        response = requests.post(
-            url,
-            headers=headers,
-            data=data  
+
+        system_prompt = (
+            "You are a customer-feedback analyst. Analyze the feedback and respond with "
+            "ONLY a valid JSON object (no markdown, no code fences) with exactly these keys:\n"
+            '- "sentiment": one of "positive", "negative", "neutral"\n'
+            '- "main_topic": a short phrase naming the main topic\n'
+            '- "key_points": the key points mentioned in the feedback\n'
+            '- "improvement_areas": areas of improvement mentioned, or "None" if none'
         )
-        
+
+        payload = {
+            "model": "sarvam-105b",
+            "max_tokens": 2000,  # reasoning model needs budget or it returns empty content
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text},
+            ],
+        }
+
+        response = requests.post(url, headers=headers, json=payload)
         if response.status_code != 200:
             print(f"Error response: {response.text}")
             response.raise_for_status()
-            
-        return response.json()
+
+        content = (response.json()["choices"][0]["message"]["content"] or "").strip()
+
+        # Strip code fences if the model wrapped the JSON despite instructions.
+        if content.startswith("```"):
+            content = content.strip("`").lstrip()
+            if content.lower().startswith("json"):
+                content = content[4:].lstrip()
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Fall back gracefully if the model didn't return clean JSON.
+            return {
+                "sentiment": None,
+                "main_topic": None,
+                "key_points": content,
+                "improvement_areas": None,
+            }
 
     def process_feedback(self, feedback_file: str) -> pd.DataFrame:
         """Process all feedback from the CSV file."""
@@ -132,19 +133,16 @@ class FeedbackAnalyzer:
                 
                 # Analyze the translated text
                 analysis = self.analyze_text(translated)
-                
-                # Extract answers
-                answers = {ans['id']: ans['response'] for ans in analysis['answers']}
-                
+
                 results.append({
                     'original_feedback': feedback,
                     'detected_language': lang_code,
                     'detected_script': script_code,
                     'translated_feedback': translated,
-                    'sentiment': answers.get('q001'),  # Updated to use question IDs
-                    'main_topic': answers.get('q002'),
-                    'key_points': answers.get('q003'),
-                    'improvement_areas': answers.get('q004')
+                    'sentiment': analysis.get('sentiment'),
+                    'main_topic': analysis.get('main_topic'),
+                    'key_points': analysis.get('key_points'),
+                    'improvement_areas': analysis.get('improvement_areas')
                 })
         
         return pd.DataFrame(results)
