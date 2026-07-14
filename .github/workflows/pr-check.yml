@@ -37,7 +37,7 @@ jobs:
       - name: Run unit tests
         run: pytest tests/ -v --tb=short
 
-      - name: Verify API allowlist is current
+      - name: Verify API rules reference is current
         run: python scripts/sync_sarvam_rules.py --check
 
       - name: Run full validation

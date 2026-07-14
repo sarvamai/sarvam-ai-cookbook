@@ -1,7 +1,7 @@
 name: Sync Sarvam API Rules
 
 # Weekly refresh of scripts/sarvam_api_rules.json from docs.sarvam.ai.
-# Opens a PR when the allowlist changes so contributor validation stays current.
+# Opens a PR when the reference file changes.
 
 on:
   schedule:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   sync:
-    name: Sync API allowlist
+    name: Sync API rules reference
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,16 +38,16 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(rules): sync Sarvam API allowlist from docs"
-          title: "chore(rules): sync Sarvam API allowlist from docs"
+          commit-message: "chore(rules): sync Sarvam API rules reference from docs"
+          title: "chore(rules): sync Sarvam API rules reference from docs"
           body: |
             Automated weekly sync of `scripts/sarvam_api_rules.json` from [docs.sarvam.ai](https://docs.sarvam.ai).
 
-            This keeps PR validation (model allowlists, language codes, deprecated APIs) aligned with current Sarvam documentation.
+            This file is a contributor reference for current models and language codes. CI does not block PRs on model names yet.
 
             **Review checklist**
             - [ ] Model lists match [Sarvam docs](https://docs.sarvam.ai)
             - [ ] Deprecated models are correct
-            - [ ] Language codes (especially `od-IN`) are accurate
+            - [ ] Language codes are accurate
           branch: bot/sync-sarvam-api-rules
           delete-branch: true

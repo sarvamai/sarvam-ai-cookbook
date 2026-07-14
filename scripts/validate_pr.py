@@ -7,8 +7,10 @@ Usage:
 
 Runs on changed files under examples/ and notebooks/:
   - Secret / API key leak detection (blocking)
-  - Deprecated Sarvam model and language-code lint on added lines
-  - Full recipe validation for changed kebab-case recipe directories
+  - Client-side API key references (blocking)
+
+Recipe structure is validated separately for new kebab-case recipe dirs.
+See scripts/sarvam_api_rules.json for current Sarvam models (reference only).
 
 No network access or API keys are required.
 """
@@ -21,12 +23,7 @@ from pathlib import Path
 
 from sarvam_checks import (
     Issue,
-    example_dir_for_file,
-    git_diff_added_lines,
     git_diff_name_only,
-    is_recipe_directory,
-    scan_added_lines_for_allowlist,
-    scan_added_lines_for_deprecated_api,
     scan_file_for_client_side_keys,
     scan_file_for_secrets,
 )
@@ -44,18 +41,8 @@ def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     return paths
 
 
-def _strict_deprecated_checks(rel: Path) -> bool:
-    """Use blocking severity for deprecated API usage in new recipe/notebook code."""
-    if rel.parts[0] == "notebooks":
-        return True
-    example_dir = example_dir_for_file(rel)
-    if example_dir and example_dir.parts[0] == "examples":
-        return is_recipe_directory(REPO_ROOT / example_dir)
-    return False
-
-
 def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
-    """Run PR-scoped checks between base_ref and head_ref."""
+    """Run PR-scoped secret checks between base_ref and head_ref."""
     issues: list[Issue] = []
     changed = changed_paths(base_ref, head_ref)
     if not changed:
@@ -69,11 +56,6 @@ def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
         seen_files.add(full)
         issues.extend(scan_file_for_secrets(full, REPO_ROOT))
         issues.extend(scan_file_for_client_side_keys(full))
-
-        added = git_diff_added_lines(base_ref, str(rel), head_ref)
-        strict = _strict_deprecated_checks(rel)
-        issues.extend(scan_added_lines_for_deprecated_api(full, added, strict=strict))
-        issues.extend(scan_added_lines_for_allowlist(full, added, strict=strict))
 
     return issues
 

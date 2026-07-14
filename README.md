@@ -24,9 +24,9 @@ We welcome examples and fixes! Before opening a pull request:
 
 1. Read [CONTRIBUTING.MD](CONTRIBUTING.MD) for security and API standards.
 2. Copy [`examples/TEMPLATE/`](examples/TEMPLATE/) for new notebook recipes.
-3. Run local validation: `make check` or `pip install -r requirements-dev.txt && pre-commit install`
+3. Run local validation: `make check`
 
-CI automatically checks every PR for secret leaks, Sarvam API compliance (via `scripts/sarvam_api_rules.json`), and recipe structure. The allowlist is refreshed weekly from [docs.sarvam.ai](https://docs.sarvam.ai).
+CI checks every PR for secret leaks and validates structure for **new** notebook recipes. Current Sarvam models are listed in `scripts/sarvam_api_rules.json` (refreshed weekly from [docs.sarvam.ai](https://docs.sarvam.ai)).
 
 #### Resources
 

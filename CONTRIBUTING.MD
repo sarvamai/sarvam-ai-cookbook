@@ -145,23 +145,22 @@ Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
 
 #### Automated PR Checks
 
-CI runs on every pull request touching `examples/`, `notebooks/`, or `scripts/`. No API keys are needed.
+CI runs on every pull request touching `examples/`, `notebooks/`, or validation scripts. No API key is needed to run checks.
 
 | Check | What it does |
 |-------|--------------|
-| `pytest tests/` | Unit tests for all validation rules |
-| `scripts/validate_pr.py` | Secret scan + model/language allowlist on changed lines |
-| `scripts/validate_recipe.py` | Full structure check for new notebook recipes |
-| `scripts/sarvam_api_rules.json` | Allowed/deprecated models synced from [docs.sarvam.ai](https://docs.sarvam.ai) |
+| `pytest tests/` | Unit tests for validation rules |
+| `scripts/validate_pr.py` | Secret scan on changed files (blocking) |
+| `scripts/validate_recipe.py` | Structure check for **new** kebab-case notebook recipes only |
+| `scripts/sarvam_api_rules.json` | Current Sarvam models (reference; synced weekly) |
 
 **Local workflow** (recommended before pushing):
 
 ```bash
 pip install -r requirements-dev.txt
-pre-commit install          # optional — runs checks automatically on commit
-make check                  # or: pytest + sync check + validate_pr
+make check
 ```
 
-When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py` and run `make sync-rules-write`. A weekly GitHub Action also opens a PR if the allowlist drifts.
+When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py` and run `make sync-rules-write`. A weekly GitHub Action opens a PR if the reference file drifts.
 
-See [`.github/CI_CHECKS.md`](.github/CI_CHECKS.md) for details on what CI validates and how to fix failures.
+See [`.github/CI_CHECKS.md`](.github/CI_CHECKS.md) for details.
