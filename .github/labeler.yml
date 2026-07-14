@@ -1,4 +1,4 @@
-# Auto-label PRs to help maintainers triage faster.
+# Auto-label PRs by changed paths.
 # https://github.com/actions/labeler
 
 examples:

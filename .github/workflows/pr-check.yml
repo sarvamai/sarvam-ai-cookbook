@@ -1,6 +1,6 @@
 name: PR Check
 
-# Validates contributor PRs and posts actionable comments for maintainers on failure.
+# Validates contributor PRs and posts actionable comments on failure.
 
 on:
   pull_request:
@@ -53,7 +53,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python scripts/maintainer_review.py ci-comment \
+          python scripts/pr_comment.py \
             --input validation-results.json \
             --output pr-comment.md
           gh pr comment "${{ github.event.pull_request.number }}" \

@@ -162,6 +162,6 @@ pre-commit install          # optional — runs checks automatically on commit
 make check                  # or: pytest + sync check + validate_pr
 ```
 
-When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py`, then run `make sync-rules-write`. A weekly GitHub Action also opens a PR if the allowlist drifts.
+When Sarvam docs change, update `canonical_rules()` in `scripts/sync_sarvam_rules.py` and run `make sync-rules-write`. A weekly GitHub Action also opens a PR if the allowlist drifts.
 
-Maintainers: see [`.github/PR_REVIEW_GUIDE.md`](.github/PR_REVIEW_GUIDE.md).
+See [`.github/CI_CHECKS.md`](.github/CI_CHECKS.md) for details on what CI validates and how to fix failures.

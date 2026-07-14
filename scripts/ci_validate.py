@@ -4,7 +4,7 @@ Usage:
     python scripts/ci_validate.py --base-ref main
     python scripts/ci_validate.py --base-ref main --output results.json
 
-Used by GitHub Actions and maintainers for a single validation entry point.
+Used by GitHub Actions as the single validation entry point.
 """
 from __future__ import annotations
 

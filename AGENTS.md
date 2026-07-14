@@ -39,4 +39,4 @@ pre-commit install   # optional
 make check
 ```
 
-See [CONTRIBUTING.MD](CONTRIBUTING.MD) and [.github/PR_REVIEW_GUIDE.md](.github/PR_REVIEW_GUIDE.md).
+See [CONTRIBUTING.MD](CONTRIBUTING.MD) and [.github/CI_CHECKS.md](.github/CI_CHECKS.md).
