@@ -125,7 +125,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 - 🇮🇳 Malayalam (മലയാളം) - `ml-IN`
 - 🇮🇳 Kannada (ಕನ್ನಡ) - `kn-IN`
 - 🇮🇳 Punjabi (ਪੰਜਾਬੀ) - `pa-IN`
-- 🇮🇳 Odia (ଓଡ଼ିଆ) - `or-IN`
+- 🇮🇳 Odia (ଓଡ଼ିଆ) - `od-IN`
 
 ## 🔌 API Endpoints
 
