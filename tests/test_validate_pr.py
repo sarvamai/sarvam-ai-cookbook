@@ -32,11 +32,19 @@ class TestSecretScanning:
 
 
 class TestRecipeDetection:
-    def test_recipe_with_env_example(self, tmp_path: Path) -> None:
+    def test_recipe_with_env_example_and_notebook(self, tmp_path: Path) -> None:
         recipe = tmp_path / "examples" / "my-recipe"
         recipe.mkdir(parents=True)
         (recipe / ".env.example").write_text("SARVAM_API_KEY=your-sarvam-api-key\n")
+        (recipe / "my_recipe.ipynb").write_text('{"cells": [], "nbformat": 4, "nbformat_minor": 5}\n')
         assert is_recipe_directory(recipe) is True
+
+    def test_app_with_env_example_only(self, tmp_path: Path) -> None:
+        app_dir = tmp_path / "examples" / "my-streamlit-app"
+        app_dir.mkdir(parents=True)
+        (app_dir / ".env.example").write_text("SARVAM_API_KEY=your-sarvam-api-key\n")
+        (app_dir / "app.py").write_text("import streamlit as st\n")
+        assert is_recipe_directory(app_dir) is False
 
     def test_legacy_example_with_spaces(self, tmp_path: Path) -> None:
         legacy = tmp_path / "examples" / "Indic Soundbox AI"

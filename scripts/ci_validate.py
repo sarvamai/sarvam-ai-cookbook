@@ -17,8 +17,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from sarvam_checks import Issue  # noqa: E402
-from validate_pr import REPO_ROOT as VP_ROOT, validate_pr_with_refs  # noqa: E402
+from sarvam_checks import Issue, is_recipe_directory  # noqa: E402
+from validate_pr import validate_pr_with_refs  # noqa: E402
 from validate_recipe import validate_recipe  # noqa: E402
 
 
@@ -44,14 +44,10 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
         dirs: set[str] = set()
         for path in result.stdout.splitlines():
             parts = path.strip().split("/")
-            if (
-                len(parts) >= 2
-                and parts[0] == "examples"
-                and parts[1] not in {"TEMPLATE", ""}
-                and (REPO_ROOT / "examples" / parts[1]).is_dir()
-                and (REPO_ROOT / "examples" / parts[1] / ".env.example").exists()
-            ):
-                dirs.add(f"examples/{parts[1]}")
+            if len(parts) >= 2 and parts[0] == "examples" and parts[1] not in {"TEMPLATE", ""}:
+                candidate = REPO_ROOT / "examples" / parts[1]
+                if is_recipe_directory(candidate):
+                    dirs.add(f"examples/{parts[1]}")
         return sorted(Path(d) for d in dirs)
     return []
 

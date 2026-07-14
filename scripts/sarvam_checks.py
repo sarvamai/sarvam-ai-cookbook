@@ -79,14 +79,19 @@ LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 
 
 def is_recipe_directory(path: Path) -> bool:
-    """Return True when an examples/ subdirectory follows the recipe layout."""
+    """Return True for notebook recipe dirs under examples/ (not app-style examples).
+
+    Apps may include `.env.example` but lack a main `.ipynb`; those are excluded.
+    """
     if path.parent.name != "examples" or not path.is_dir():
         return False
     if path.name in LEGACY_EXAMPLE_DIRS:
         return False
     if " " in path.name:
         return False
-    return (path / ".env.example").exists()
+    if not (path / ".env.example").exists():
+        return False
+    return any(path.glob("*.ipynb"))
 
 
 def example_dir_for_file(file_path: Path) -> Path | None:

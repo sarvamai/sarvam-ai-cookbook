@@ -151,7 +151,7 @@ CI runs on every pull request touching `examples/`, `notebooks/`, or validation 
 |-------|--------------|
 | `pytest tests/` | Unit tests for validation rules |
 | `scripts/validate_pr.py` | Secret scan on changed files (blocking) |
-| `scripts/validate_recipe.py` | Structure check for **new** kebab-case notebook recipes only |
+| `scripts/validate_recipe.py` | Structure check for **new notebook recipes** (`.env.example` + `.ipynb`) only |
 | `scripts/sarvam_api_rules.json` | Current Sarvam models (reference; synced weekly) |
 
 **Local workflow** (recommended before pushing):
