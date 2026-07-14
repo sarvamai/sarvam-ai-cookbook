@@ -7,14 +7,14 @@ A speech-to-speech voice agent built on Sarvam's WebSocket APIs. You talk, it ta
 https://github.com/user-attachments/assets/5e939abd-1e86-4d83-a5ef-7ad02f168811
 
 </div>
-```
-browser mic ──PCM──▶ FastAPI ──▶ STT streaming WS (saaras:v3)
-                        │                │ transcript
-                        │                ▼
-                        │         Chat Completion (sarvam-105b, streamed)
-                        │                │ sentences
-                        │                ▼
-browser speaker ◀─PCM── └────────  TTS streaming WS (bulbul:v2)
+
+```mermaid
+flowchart LR
+    A[Browser Mic] -->|PCM Audio| B[FastAPI]
+    B -->|Streaming STT| C[Saaras v3]
+    C -->|Transcript| D[OpenAI Chat]
+    D -->|Response Text| E[TTS Streaming]
+    E -->|Audio| F[Browser Speaker]
 ```
 
 Everything is streamed end to end: the assistant starts speaking the first sentence while the model is still writing the second one.
@@ -32,7 +32,7 @@ Everything is streamed end to end: the assistant starts speaking the first sente
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env      # then add your key from https://dashboard.sarvam.ai/
+cp .env.example .env      # then add your key from https://platform.sarvam.ai/
 python app.py
 ```
 

@@ -26,10 +26,10 @@ load_dotenv()
 
 API_KEY = os.getenv("SARVAM_API_KEY")
 if not API_KEY:
-    raise SystemExit("SARVAM_API_KEY is not set. Copy .env.example to .env first.")
+    raise SystemExit("SARVAM_API_KEY is not set. Set it in your environment or a .env file.")
 
-LANGUAGE = os.getenv("LANGUAGE", "hi-IN")  # STT input and TTS output language
-SPEAKER = os.getenv("SPEAKER", "anushka")
+LANGUAGE = "hi-IN"  # STT input and TTS output language
+SPEAKER = "anushka"  # TTS voice
 # Both Sarvam chat models "think" before answering, and the thinking is not optional
 # (reasoning_effort="none" is rejected). sarvam-30b routinely spends its whole token
 # budget reasoning and never emits an answer, so 105b on low effort is the only usable
