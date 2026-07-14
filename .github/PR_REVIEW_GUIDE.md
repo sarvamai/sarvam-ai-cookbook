@@ -1,6 +1,8 @@
 # Pull Request Review Guide
 
-This document describes how maintainers review PRs and what CI enforces automatically.
+Maintainers: start with [MAINTAINER.md](MAINTAINER.md) for daily commands.
+
+This document describes what CI enforces and what still needs human review.
 
 ## Automated checks (CI)
 
@@ -54,6 +56,27 @@ Validated against `scripts/sarvam_api_rules.json`:
 ## Warnings (non-blocking unless `--strict`)
 
 Deprecated API usage in **legacy** examples (PascalCase / spaced directory names) is reported as a warning so incremental fixes are possible.
+
+## Maintainer tools
+
+CI posts a **grouped failure comment** on PRs when validation fails — contributors can fix without waiting for you.
+
+| Command | What it does |
+|---------|--------------|
+| `make triage` | Open PRs with CI status + risk (HIGH = touches examples) |
+| `make review-pr PR=90` | Full report + merge recommendation |
+| `make review-pr PR=90 POST=1` | Same + post comment on GitHub |
+
+Example output:
+
+```
+Recommendation: REQUEST CHANGES — CI validation errors
+Errors: 2 | Warnings: 1
+  [ERROR] [secrets] Possible hardcoded API key in examples/foo/app.py
+  [ERROR] [deprecated-model] model = "sarvam-m"
+```
+
+PRs are auto-labeled: `examples`, `notebooks`, `ci`, `documentation`.
 
 ## Manual review checklist
 

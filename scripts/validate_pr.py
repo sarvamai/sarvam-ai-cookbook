@@ -35,10 +35,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCAN_PREFIXES = ("examples/", "notebooks/")
 
 
-def changed_paths(base_ref: str) -> list[Path]:
+def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     """Return repo-relative paths changed in the PR."""
     paths: list[Path] = []
-    for rel in git_diff_name_only(base_ref):
+    for rel in git_diff_name_only(base_ref, head_ref):
         if rel.startswith(SCAN_PREFIXES):
             paths.append(Path(rel))
     return paths
@@ -54,10 +54,10 @@ def _strict_deprecated_checks(rel: Path) -> bool:
     return False
 
 
-def validate_pr(base_ref: str) -> list[Issue]:
-    """Run PR-scoped security and API compliance checks on changed files."""
+def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
+    """Run PR-scoped checks between base_ref and head_ref."""
     issues: list[Issue] = []
-    changed = changed_paths(base_ref)
+    changed = changed_paths(base_ref, head_ref)
     if not changed:
         return issues
 
@@ -70,16 +70,17 @@ def validate_pr(base_ref: str) -> list[Issue]:
         issues.extend(scan_file_for_secrets(full, REPO_ROOT))
         issues.extend(scan_file_for_client_side_keys(full))
 
-        added = git_diff_added_lines(base_ref, str(rel))
+        added = git_diff_added_lines(base_ref, str(rel), head_ref)
         strict = _strict_deprecated_checks(rel)
-        issues.extend(
-            scan_added_lines_for_deprecated_api(full, added, strict=strict)
-        )
-        issues.extend(
-            scan_added_lines_for_allowlist(full, added, strict=strict)
-        )
+        issues.extend(scan_added_lines_for_deprecated_api(full, added, strict=strict))
+        issues.extend(scan_added_lines_for_allowlist(full, added, strict=strict))
 
     return issues
+
+
+def validate_pr(base_ref: str) -> list[Issue]:
+    """Run PR-scoped security and API compliance checks on changed files."""
+    return validate_pr_with_refs(base_ref, "HEAD")
 
 
 def main() -> int:

@@ -1,4 +1,4 @@
-.PHONY: check test sync-rules validate-pr
+.PHONY: check test sync-rules validate-pr sync-rules-write triage review-pr
 
 check: test sync-rules validate-pr
 
@@ -12,6 +12,13 @@ sync-rules:
 validate-pr:
 	python scripts/validate_pr.py --base-ref main
 
-# Refresh the API allowlist after updating canonical_rules() in sync_sarvam_rules.py
 sync-rules-write:
 	python scripts/sync_sarvam_rules.py --verbose
+
+# Maintainer targets (requires gh CLI)
+triage:
+	python scripts/maintainer_review.py triage
+
+review-pr:
+	@test -n "$(PR)" || (echo "Usage: make review-pr PR=90 [POST=1]" && exit 1)
+	python scripts/maintainer_review.py review $(PR) $(if $(POST),--post-comment,)

@@ -141,56 +141,50 @@ def should_scan_file(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def git_diff_name_only(base_ref: str) -> list[str]:
-    """Return changed file paths between base_ref and HEAD."""
-    result = subprocess.run(
-        ["git", "diff", "--name-only", "--diff-filter=ACMRT", f"origin/{base_ref}...HEAD"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
+def git_diff_name_only(base_ref: str, head_ref: str = "HEAD") -> list[str]:
+    """Return changed file paths between base_ref and head_ref."""
+    for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--diff-filter=ACMRT", f"{base_ref}...HEAD"],
+            ["git", "diff", "--name-only", "--diff-filter=ACMRT", ref_pair],
             capture_output=True,
             text=True,
-            check=True,
+            check=False,
         )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        if result.returncode == 0:
+            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return []
 
 
-def git_diff_added_lines(base_ref: str, file_path: str) -> list[tuple[int, str]]:
+def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") -> list[tuple[int, str]]:
     """Return (line_number, content) for lines added in file_path."""
-    result = subprocess.run(
-        ["git", "diff", "-U0", f"origin/{base_ref}...HEAD", "--", file_path],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
+    for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
-            ["git", "diff", "-U0", f"{base_ref}...HEAD", "--", file_path],
+            ["git", "diff", "-U0", ref_pair, "--", file_path],
             capture_output=True,
             text=True,
-            check=True,
+            check=False,
         )
+        if result.returncode != 0:
+            continue
 
-    added: list[tuple[int, str]] = []
-    current_line = 0
-    for line in result.stdout.splitlines():
-        if line.startswith("@@"):
-            match = re.search(r"\+(\d+)", line)
-            if match:
-                current_line = int(match.group(1)) - 1
-            continue
-        if line.startswith("+++") or line.startswith("---"):
-            continue
-        if line.startswith("+"):
-            current_line += 1
-            added.append((current_line, line[1:]))
-        elif line.startswith(" "):
-            current_line += 1
-    return added
+        added: list[tuple[int, str]] = []
+        current_line = 0
+        for line in result.stdout.splitlines():
+            if line.startswith("@@"):
+                match = re.search(r"\+(\d+)", line)
+                if match:
+                    current_line = int(match.group(1)) - 1
+                continue
+            if line.startswith("+++") or line.startswith("---"):
+                continue
+            if line.startswith("+"):
+                current_line += 1
+                added.append((current_line, line[1:]))
+            elif line.startswith(" "):
+                current_line += 1
+        if added or result.stdout:
+            return added
+    return []
 
 
 # ---------------------------------------------------------------------------

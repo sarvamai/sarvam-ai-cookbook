@@ -1,7 +1,6 @@
 name: PR Check
 
-# Validates contributor PRs: secrets, Sarvam API allowlist, recipe structure.
-# No API keys or external services required.
+# Validates contributor PRs and posts actionable comments for maintainers on failure.
 
 on:
   pull_request:
@@ -14,6 +13,10 @@ on:
       - "requirements-dev.txt"
       - ".github/workflows/pr-check.yml"
       - "scripts/sarvam_api_rules.json"
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   validate:
@@ -37,52 +40,25 @@ jobs:
       - name: Verify API allowlist is current
         run: python scripts/sync_sarvam_rules.py --check
 
-      - name: Validate changed examples and notebooks
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: python scripts/validate_pr.py --base-ref "$BASE_REF"
-
-      - name: Validate changed recipe directories
+      - name: Run full validation
+        id: validate
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          python - <<'PYEOF'
-          import os
-          import subprocess
-          import sys
-          from pathlib import Path
+          python scripts/ci_validate.py --base-ref "$BASE_REF" --output validation-results.json
+        continue-on-error: true
 
-          base = os.environ["BASE_REF"]
-          result = subprocess.run(
-              ["git", "diff", "--name-only", f"origin/{base}...HEAD"],
-              capture_output=True,
-              text=True,
-              check=True,
-          )
+      - name: Post validation summary on failure
+        if: steps.validate.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/maintainer_review.py ci-comment \
+            --input validation-results.json \
+            --output pr-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file pr-comment.md
 
-          dirs: set[str] = set()
-          for path in result.stdout.splitlines():
-              parts = path.split("/")
-              if (
-                  len(parts) >= 2
-                  and parts[0] == "examples"
-                  and parts[1] not in {"TEMPLATE", ""}
-                  and Path(f"examples/{parts[1]}").is_dir()
-                  and Path(f"examples/{parts[1]}/.env.example").exists()
-              ):
-                  dirs.add(f"examples/{parts[1]}")
-
-          if not dirs:
-              print("No recipe directories changed — skipping.")
-              sys.exit(0)
-
-          failed = 0
-          for directory in sorted(dirs):
-              print(f"=== Validating recipe: {directory} ===")
-              proc = subprocess.run(
-                  [sys.executable, "scripts/validate_recipe.py", directory],
-              )
-              if proc.returncode != 0:
-                  failed = 1
-          sys.exit(failed)
-          PYEOF
+      - name: Fail if validation failed
+        if: steps.validate.outcome == 'failure'
+        run: exit 1

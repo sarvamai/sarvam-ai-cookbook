@@ -1,0 +1,23 @@
+# Auto-label PRs to help maintainers triage faster.
+# https://github.com/actions/labeler
+
+examples:
+  - changed-files:
+      - any-glob-to-any-file: "examples/**"
+
+notebooks:
+  - changed-files:
+      - any-glob-to-any-file: "notebooks/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "scripts/**"
+          - "tests/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "!examples/**"
