@@ -1,0 +1,103 @@
+# Pull Request Review Guide
+
+This document describes how maintainers review PRs and what CI enforces automatically.
+
+## Automated checks (CI)
+
+Every PR touching `examples/`, `notebooks/`, or `scripts/` runs three jobs:
+
+| Job | Script | What it checks |
+|-----|--------|----------------|
+| **Validator unit tests** | `pytest tests/` | Regression coverage for all rules |
+| **Validate PR changes** | `scripts/validate_pr.py` | Secrets, allowlist models/languages, client-side keys |
+| **Validate recipes** | `scripts/validate_recipe.py` | Full structure check for changed kebab-case recipe dirs |
+
+### Option C — keeping docs current
+
+```
+docs.sarvam.ai  ──weekly──▶  sync-sarvam-rules.yml
+                                    │
+                                    ▼
+                         scripts/sarvam_api_rules.json  ◀── PR allowlist
+                                    │
+                                    ▼
+                         validate_pr.py (every PR)
+```
+
+1. **Static rules** — instant blocking checks (secrets, known-bad patterns)
+2. **Allowlist file** — `scripts/sarvam_api_rules.json` synced from docs
+3. **Weekly bot PR** — `.github/workflows/sync-sarvam-rules.yml` updates the allowlist
+
+Run locally before pushing:
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+python scripts/sync_sarvam_rules.py --check
+python scripts/validate_pr.py --base-ref main
+python scripts/validate_recipe.py examples/my-recipe   # for new recipes
+```
+
+## Blocking issues (CI fails)
+
+### Security
+- Hardcoded `SARVAM_API_KEY` or `api-subscription-key` values
+- Real Sarvam keys matching `sk_*` pattern
+- Committed `.env` files
+- Client-side (`"use client"`) references to `SARVAM_API_KEY`
+
+### Sarvam API (added lines in recipes & notebooks)
+Validated against `scripts/sarvam_api_rules.json`:
+- **Deprecated** models (e.g. `sarvam-m`, `saarika:v2.5`, `bulbul:v2`)
+- **Unknown** Sarvam model names not in the allowlist
+- **Invalid** language codes (e.g. `or-IN` → use `od-IN`)
+
+### Recipe structure (new notebook recipes)
+- Missing required files — see `examples/TEMPLATE/`
+- Unpinned dependencies in `requirements.txt`
+- Missing API key fail-fast guard in notebook
+
+## Warnings (non-blocking unless `--strict`)
+
+Deprecated API usage in **legacy** examples (PascalCase / spaced directory names) is reported as a warning so incremental fixes are possible.
+
+## Manual review checklist
+
+CI cannot replace these checks:
+
+1. **Smoke test** — contributor test plan is credible; example runs end-to-end
+2. **No duplication** — example is not redundant with an existing one
+3. **README quality** — setup steps, env vars, link to [Sarvam docs](https://docs.sarvam.ai)
+4. **Scope** — PR is focused; no unrelated changes
+5. **License** — contributor owns the code (see CONTRIBUTING.MD legal notice)
+
+## Current Sarvam API reference
+
+| API | Recommended | Avoid |
+|-----|-------------|-------|
+| Chat / LLM | `sarvam-30b`, `sarvam-105b` | `sarvam-m` |
+| STT | `saaras:v3` | `saarika:v2.5` |
+| TTS | `bulbul:v3` | `bulbul:v2` |
+| Auth header | `api-subscription-key` | Hardcoded keys |
+| SDK | `sarvamai>=0.1.24` | Unpinned deps |
+
+Docs: https://docs.sarvam.ai
+
+## Review decisions
+
+| Outcome | When |
+|---------|------|
+| **Approve** | CI green + manual checklist satisfied |
+| **Request changes** | Fixable security or API issues |
+| **Block** | Hardcoded secrets or keys in git history |
+
+## Comment templates
+
+**Hardcoded key:**
+> Blocking: load `SARVAM_API_KEY` from the environment. See [authentication docs](https://docs.sarvam.ai/api-reference-docs/authentication) and `examples/TEMPLATE/`.
+
+**Outdated model:**
+> Please use current models: `sarvam-30b` for chat, `saaras:v3` for STT, `bulbul:v3` for TTS.
+
+**Client-side key:**
+> Move Sarvam API calls to a server route. Keys must not ship to the browser.

@@ -18,6 +18,16 @@ SARVAM_API_KEY=<your API key>
 
 Most examples are written in **Python**, but the concepts can be adapted to any programming language.
 
+#### Contributing
+
+We welcome examples and fixes! Before opening a pull request:
+
+1. Read [CONTRIBUTING.MD](CONTRIBUTING.MD) for security and API standards.
+2. Copy [`examples/TEMPLATE/`](examples/TEMPLATE/) for new notebook recipes.
+3. Run local validation: `pip install -r requirements-dev.txt && pytest tests/ -v`
+
+CI automatically checks every PR for secret leaks, Sarvam API compliance (via `scripts/sarvam_api_rules.json`), and recipe structure. The allowlist is refreshed weekly from [docs.sarvam.ai](https://docs.sarvam.ai).
+
 #### Resources
 
 - [Sarvam AI Documentation](https://docs.sarvam.ai)

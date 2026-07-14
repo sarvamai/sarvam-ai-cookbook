@@ -1,0 +1,8 @@
+# Default reviewers for cookbook examples, notebooks, and CI tooling.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+/examples/    @sarvamai
+/notebooks/  @sarvamai
+/scripts/    @sarvamai
+/.github/    @sarvamai
+/tests/      @sarvamai
