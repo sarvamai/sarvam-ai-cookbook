@@ -1,9 +1,6 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 import asyncio
-import base64
-import io
-from pydub import AudioSegment
 from sarvamai import AsyncSarvamAI
 import logging
 import threading
@@ -14,80 +11,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "live_transcription_demo"
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config["SECRET_KEY"] = config.SECRET_KEY
+socketio = SocketIO(app, cors_allowed_origins=config.CORS_ALLOWED_ORIGINS)
 
 # Sarvam AI client
 SARVAM_API_KEY = config.SARVAM_API_KEY
-
-# Global variables
-active_clients = set()
-recent_transcriptions = []
-recent_translations = []
-translation_chunk_counter = 0
-translation_processing_times = []
-processed_chunks = set()  # Track processed chunk names
-
-
-def create_silence_base64():
-    """Create silence audio for Sarvam API"""
-    silence = AudioSegment.silent(duration=1000, frame_rate=16000)
-    silence = silence.set_channels(1)
-
-    # Use an in-memory buffer — NamedTemporaryFile can't be reopened on Windows
-    buf = io.BytesIO()
-    silence.export(buf, format="wav")
-    return base64.b64encode(buf.getvalue()).decode("utf-8")
-
-
-def combine_silence_and_audio(audio_base64):
-    """Combine 1 second silence with audio data into single Base64 chunk"""
-    try:
-        logger.info(f"Starting audio combination. Input length: {len(audio_base64)}")
-
-        # Decode the incoming audio
-        audio_bytes = base64.b64decode(audio_base64)
-        logger.info(f"Decoded audio bytes: {len(audio_bytes)} bytes")
-
-        # Create silence (1 second at 16kHz, mono)
-        silence = AudioSegment.silent(duration=1000, frame_rate=16000)
-        silence = silence.set_channels(1)
-        logger.info(
-            f"Created silence: {len(silence)} ms, {silence.frame_rate}Hz, {silence.channels} channels"
-        )
-
-        # Load the audio data from an in-memory buffer (Windows-safe)
-        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="wav")
-
-        logger.info(
-            f"Loaded audio segment: {len(audio_segment)} ms, {audio_segment.frame_rate}Hz, {audio_segment.channels} channels"
-        )
-
-        # Ensure audio is in correct format (16kHz, mono)
-        audio_segment = audio_segment.set_frame_rate(16000).set_channels(1)
-        logger.info(
-            f"Resampled audio: {len(audio_segment)} ms, {audio_segment.frame_rate}Hz, {audio_segment.channels} channels"
-        )
-
-        # Combine: silence first, then audio
-        combined_audio = silence + audio_segment
-        logger.info(
-            f"Combined audio: {len(combined_audio)} ms, {combined_audio.frame_rate}Hz, {combined_audio.channels} channels"
-        )
-
-        # Export combined audio to Base64 via in-memory buffer (Windows-safe)
-        buf = io.BytesIO()
-        combined_audio.export(buf, format="wav")
-        result = base64.b64encode(buf.getvalue()).decode("utf-8")
-        logger.info(f"Final combined audio Base64 length: {len(result)}")
-        return result
-
-    except Exception as e:
-        logger.error(f"Error combining silence and audio: {e}")
-        import traceback
-
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return audio_base64  # Return original if combination fails
 
 
 def _extract_text(resp):
@@ -128,13 +56,19 @@ class StreamingSession:
         if self._stopped:
             return
         # Scheduled onto the session's own loop from the Socket.IO thread.
-        asyncio.run_coroutine_threadsafe(self.queue.put(audio_b64), self.loop)
+        try:
+            asyncio.run_coroutine_threadsafe(self.queue.put(audio_b64), self.loop)
+        except RuntimeError:
+            self._stopped = True  # loop died (e.g. connection never opened)
 
     def stop(self):
         if self._stopped:
             return
         self._stopped = True
-        asyncio.run_coroutine_threadsafe(self.queue.put(None), self.loop)
+        try:
+            asyncio.run_coroutine_threadsafe(self.queue.put(None), self.loop)
+        except RuntimeError:
+            pass  # loop already dead, nothing to stop
 
     def _run(self):
         asyncio.set_event_loop(self.loop)
@@ -142,6 +76,16 @@ class StreamingSession:
             self.loop.run_until_complete(self._session())
         except Exception as e:
             logger.error(f"[{self.mode}] session loop error: {e}")
+            self._stopped = True
+            # Unregister so the client can retry with a fresh start_stream,
+            # and let the browser know why nothing is coming through.
+            streaming_sessions.pop((self.sid, self.mode), None)
+            with app.app_context():
+                socketio.emit(
+                    "error",
+                    {"message": f"Failed to start {self.mode} stream: {e}"},
+                    to=self.sid,
+                )
         finally:
             self.loop.close()
 
@@ -151,7 +95,7 @@ class StreamingSession:
 
         if self.mode == "transcribe":
             conn = client.speech_to_text_streaming.connect(
-                language_code="unknown", model="saaras:v3"
+                language_code=config.API_LANGUAGE, model="saaras:v3"
             )
         else:
             conn = client.speech_to_text_translate_streaming.connect(model="saaras:v3")
@@ -198,16 +142,9 @@ streaming_sessions = {}
 
 def emit_streaming_result(sid, mode, text):
     """Emit a transcript/translation result to a specific client."""
-    result_data = {"text": text, "status": "completed"}
-    if mode == "transcribe":
-        add_transcription_to_queue(result_data)
-        event = "transcription_result"
-    else:
-        add_translation_to_queue(result_data)
-        event = "translation_result"
-
+    event = "transcription_result" if mode == "transcribe" else "translation_result"
     with app.app_context():
-        socketio.emit(event, result_data, to=sid)
+        socketio.emit(event, {"text": text}, to=sid)
 
 
 @app.route("/")
@@ -224,7 +161,6 @@ def index():
 def handle_connect():
     """Handle client connection"""
     logger.info(f"Client connected: {request.sid}")
-    active_clients.add(request.sid)
     emit("status", {"message": "Connected to transcription service"})
 
 
@@ -232,7 +168,6 @@ def handle_connect():
 def handle_disconnect():
     """Handle client disconnection"""
     logger.info(f"Client disconnected: {request.sid}")
-    active_clients.discard(request.sid)
     # Tear down any streaming sessions this client owned
     for mode in ("transcribe", "translate"):
         session = streaming_sessions.pop((request.sid, mode), None)
@@ -282,66 +217,6 @@ def handle_video_control(data):
         emit("status", {"message": "Video paused - transcription paused"})
 
 
-def add_transcription_to_queue(transcription_data):
-    """Add transcription to both WebSocket and polling queue"""
-    recent_transcriptions.append(transcription_data)
-    # Keep only last 50 transcriptions
-    if len(recent_transcriptions) > 50:
-        recent_transcriptions.pop(0)
-
-
-def add_translation_to_queue(translation_data):
-    """Add translation to both WebSocket and polling queue"""
-    recent_translations.append(translation_data)
-    # Keep only last 50 translations
-    if len(recent_translations) > 50:
-        recent_translations.pop(0)
-
-
-@app.route("/get_transcriptions")
-def get_transcriptions():
-    """Polling endpoint for transcriptions as WebSocket fallback"""
-    return {"transcriptions": recent_transcriptions}
-
-
-@app.route("/get_translations")
-def get_translations():
-    """Polling endpoint for translations as WebSocket fallback"""
-    return {"translations": recent_translations}
-
-
-@app.route("/clear_transcriptions")
-def clear_transcriptions():
-    """Clear transcription queue"""
-    recent_transcriptions.clear()
-    return {"status": "cleared"}
-
-
-@app.route("/clear_translations")
-def clear_translations():
-    """Clear translation queue"""
-    recent_translations.clear()
-    return {"status": "cleared"}
-
-
-@app.route("/translation_stats")
-def translation_stats():
-    """Get translation processing statistics"""
-    global translation_chunk_counter, translation_processing_times
-
-    avg_time = 0
-    if translation_processing_times:
-        avg_time = sum(translation_processing_times) / len(translation_processing_times)
-
-    return {
-        "total_chunks_processed": translation_chunk_counter,
-        "recent_translations": len(recent_translations),
-        "average_processing_time": avg_time,
-        "processing_times": translation_processing_times,
-        "translation_queue_size": len(recent_translations),
-    }
-
-
 @socketio.on("audio_chunk")
 def handle_audio_chunk(data):
     """Forward an incoming audio chunk into the persistent transcription session."""
@@ -383,5 +258,7 @@ def handle_translation_chunk(data):
 
 if __name__ == "__main__":
     logger.info("Starting Live Transcription Demo Server...")
-    logger.info("Open http://localhost:5001 in your browser")
-    socketio.run(app, debug=False, host="127.0.0.1", port=5001, allow_unsafe_werkzeug=True)
+    logger.info(f"Open http://{config.HOST}:{config.PORT} in your browser")
+    socketio.run(
+        app, debug=config.DEBUG, host=config.HOST, port=config.PORT, allow_unsafe_werkzeug=True
+    )

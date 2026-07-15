@@ -1,51 +1,43 @@
 # Live Speech Transcription & Translation Demo
 
-A real-time speech transcription and translation demo using Flask and Sarvam AI's API. This application can transcribe speech from video files and provide live translations.
+A real-time speech transcription and translation demo using Flask-SocketIO and Sarvam AI's streaming speech-to-text API. Play or upload any video with speech, and see live transcription and English translation as it plays.
+
+## How it works
+
+The browser captures the video's audio via the Web Audio API, resamples it to 16kHz mono WAV, and streams ~1 second frames to the Flask server over Socket.IO. For each client, the server opens one persistent streaming connection per mode (transcribe/translate) to the Sarvam AI API and forwards audio frames into it as they arrive; transcripts are pushed back to the browser over the same socket as they finalize.
 
 ## Features
 
 - Real-time speech transcription
 - Live translation to English
-- Support for video file playback
+- Runs transcription and translation concurrently, each with its own persistent streaming connection
 - WebSocket-based communication for instant results
-- Clean and modern UI
-- Progress tracking for both transcription and translation
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Flask and its dependencies
 - Sarvam AI API key
 
 ## Installation
 
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd live_transcription_demo
-```
-
-2. Create and activate a virtual environment:
+1. Create and activate a virtual environment:
 
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install the required packages:
+2. Install the required packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Set up your Sarvam AI API key:
-   - Create a `.env` file in the root directory
-   - Add your API key:
-     ```
-     SARVAM_API_KEY=your-api-key-here
-     ```
-   - Or set it directly in `config.py`
+3. Set up your Sarvam AI API key by creating a `.env` file in this directory:
+
+```
+SARVAM_API_KEY=your-api-key-here
+```
 
 ## Usage
 
@@ -62,24 +54,21 @@ http://localhost:5001
 ```
 
 3. Use the demo:
-   - Click "Start Transcription" to begin transcribing
-   - Click "Start Translation" to begin translating
-   - Use the provided demo video or upload your own
+   - Upload a video with speech
+   - Click "Start Transcription" and/or "Start Translation"
    - Watch as transcriptions and translations appear in real-time
 
 ## Project Structure
 
 ```
-live_transcription_demo/
-├── app.py                 # Main Flask application
+Live_Video_Transcription/
+├── app.py               # Flask + Socket.IO server, persistent Sarvam streaming sessions
 ├── config.py             # Configuration settings
 ├── requirements.txt      # Python dependencies
 ├── static/
-│   ├── style.css        # CSS styles
-│   ├── demo_video.mp4   # Sample video for testing
-│   └── demo_video_extended.mp4
+│   └── style.css        # CSS styles
 └── templates/
-    └── index.html       # Main application template
+    └── index.html        # Main application page (video capture, WAV encoding, Socket.IO client)
 ```
 
 ## Configuration
@@ -87,31 +76,14 @@ live_transcription_demo/
 You can modify the following settings in `config.py`:
 
 - `SARVAM_API_KEY`: Your Sarvam AI API key
-- `HOST`: Server host (default: "0.0.0.0")
-- `PORT`: Server port (default: 5001)
-- `AUDIO_SAMPLE_RATE`: Audio processing rate (default: 16000)
-- `CHUNK_DURATION_MS`: Audio chunk duration (default: 3000ms)
+- `HOST` / `PORT`: Server bind address (default: `127.0.0.1:5001`)
+- `API_LANGUAGE`: Source language passed to the transcription stream (default: `"unknown"`, i.e. auto-detect)
 
-## API Endpoints
+## Socket.IO events
 
-The application uses WebSocket endpoints for real-time communication:
-
-- `/`: Main application interface
-- WebSocket events:
-  - `audio_chunk`: Handle incoming audio for transcription
-  - `translation_chunk`: Handle incoming audio for translation
-  - `transcription_result`: Receive transcription results
-  - `translation_result`: Receive translation results
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- `start_stream` / `stop_stream` (client → server): open/close a persistent streaming session for `{ mode: "transcribe" | "translate" }`
+- `audio_chunk` / `translation_chunk` (client → server): forward a WAV audio frame, `{ audio: "<base64>" }`
+- `transcription_result` / `translation_result` (server → client): a finalized piece of text, `{ text: "..." }`
+- `video_control` (client → server): informational play/pause events
+- `status` / `error` (server → client): connection status and error messages
 
