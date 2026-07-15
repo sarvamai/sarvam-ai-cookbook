@@ -80,7 +80,7 @@ export function LanguageSelector({ selectedLanguage, onLanguageChange }: Languag
       </Select>
       
       <div className="text-xs text-muted-foreground">
-        Select your preferred language for podcast generation. All languages are supported by Sarvam AI's multilingual models.
+        Select your preferred language for podcast generation. All languages are supported by Sarvam AI&apos;s multilingual models.
       </div>
     </div>
   );
