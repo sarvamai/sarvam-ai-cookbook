@@ -183,6 +183,8 @@ Requirements:
 Provide only the summary without any additional formatting or explanations.`;
 
     try {
+        // max_tokens capped at 4096: the lowest per-plan output limit across all
+        // sarvam-105b tiers (Starter/Pro/Business), so this works regardless of key tier.
         const summary = await makeRateLimitedApiCall(() =>
             callSarvamChat([
                 {
@@ -239,7 +241,11 @@ Format:
 
     // Calculate the base prompt tokens (without content)
     const basePromptTokens = estimateTokenCount(promptTemplate.replace('CONTENT_PLACEHOLDER', ''));
-    const maxTotalTokens = 60000; // Sarvam 105B prompt token budget, leaving headroom for the response
+    // sarvam-105b's documented context window is 128K tokens, but the API sits behind a
+    // gateway that rejects request bodies over ~256KB (empirically ~60-65K tokens using
+    // this file's 4-chars/token estimate) before the request ever reaches the model.
+    // Kept well under that ceiling here, with room left for the completion.
+    const maxTotalTokens = 60000;
     const maxContentTokens = maxTotalTokens - basePromptTokens;
 
     console.log(`Base prompt tokens: ${basePromptTokens}, Max content tokens: ${maxContentTokens}`);
@@ -266,6 +272,7 @@ Format:
     }
 
     try {
+        // Same 4096 output cap rationale as summarizeChunk above.
         const scriptText = await makeRateLimitedApiCall(() =>
             callSarvamChat([
                 {
