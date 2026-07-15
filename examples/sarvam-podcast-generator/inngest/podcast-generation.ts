@@ -24,7 +24,7 @@ const LANGUAGE_PROMPT_NAMES: { [key: string]: string } = {
     'ml-IN': 'Malayalam',
     'kn-IN': 'Kannada',
     'pa-IN': 'Punjabi',
-    'or-IN': 'Odia'
+    'od-IN': 'Odia'
 };
 
 // Voice mappings for different speakers (bulbul:v3)
@@ -39,7 +39,7 @@ const VOICE_MAPPINGS: { [key: string]: { host: string; guest: string } } = {
     'ml-IN': { host: 'priya', guest: 'shubh' },
     'kn-IN': { host: 'priya', guest: 'shubh' },
     'pa-IN': { host: 'priya', guest: 'shubh' },
-    'or-IN': { host: 'priya', guest: 'shubh' }
+    'od-IN': { host: 'priya', guest: 'shubh' }
 };
 
 async function callSarvamChat(messages: Array<{ role: string, content: string }>, temperature: number = 0.7, maxTokens?: number, retryCount: number = 0): Promise<string> {
@@ -125,7 +125,7 @@ async function makeRateLimitedApiCall<T>(apiCall: () => Promise<T>): Promise<T> 
     return apiCall();
 }
 
-// Function to estimate token count (rough approximation: 1 token â‰ˆ 4 characters)
+// Function to estimate token count (rough approximation: 1 token ~= 4 characters)
 function estimateTokenCount(text: string): number {
     return Math.ceil(text.length / 4);
 }
@@ -183,6 +183,8 @@ Requirements:
 Provide only the summary without any additional formatting or explanations.`;
 
     try {
+        // max_tokens capped at 4096: the lowest per-plan output limit across all
+        // sarvam-105b tiers (Starter/Pro/Business), so this works regardless of key tier.
         const summary = await makeRateLimitedApiCall(() =>
             callSarvamChat([
                 {
@@ -239,7 +241,11 @@ Format:
 
     // Calculate the base prompt tokens (without content)
     const basePromptTokens = estimateTokenCount(promptTemplate.replace('CONTENT_PLACEHOLDER', ''));
-    const maxTotalTokens = 60000; // Leave some buffer under the 7168 limit
+    // sarvam-105b's documented context window is 128K tokens, but the API sits behind a
+    // gateway that rejects request bodies over ~256KB (empirically ~60-65K tokens using
+    // this file's 4-chars/token estimate) before the request ever reaches the model.
+    // Kept well under that ceiling here, with room left for the completion.
+    const maxTotalTokens = 60000;
     const maxContentTokens = maxTotalTokens - basePromptTokens;
 
     console.log(`Base prompt tokens: ${basePromptTokens}, Max content tokens: ${maxContentTokens}`);
@@ -262,10 +268,11 @@ Format:
     console.log(`Final prompt tokens: ${finalPromptTokens}`);
     
     if (finalPromptTokens > 60000) {
-        throw new Error(`Prompt still too long after processing: ${finalPromptTokens} tokens (max: 7168)`);
+        throw new Error(`Prompt still too long after processing: ${finalPromptTokens} tokens (max: ${maxTotalTokens})`);
     }
 
     try {
+        // Same 4096 output cap rationale as summarizeChunk above.
         const scriptText = await makeRateLimitedApiCall(() =>
             callSarvamChat([
                 {

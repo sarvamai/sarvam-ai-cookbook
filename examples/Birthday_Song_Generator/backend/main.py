@@ -72,12 +72,23 @@ async def generate_song(data: UserAnswers):
                     "content": prompt
                 }
             ],
-            "model": "sarvam-m"
+            "model": "sarvam-105b",
+            "max_tokens": 4000,
+            # This is a creative task, so keep reasoning light — otherwise the
+            # reasoning model can spend the whole token budget thinking and
+            # return empty content (finish_reason="length").
+            "reasoning_effort": "low"
         },
     )
 
-    result = response.json()
-    content = result["choices"][0]["message"]["content"]
-    print(content)
+    # Handle API errors gracefully so the frontend always receives a "quotes" string.
+    if response.status_code != 200:
+        return {"quotes": f"Sorry, the song couldn't be generated (API error {response.status_code}). Please check your API key and try again."}
 
+    result = response.json()
+    content = result.get("choices", [{}])[0].get("message", {}).get("content")
+    if not content:
+        return {"quotes": "The song came back empty — please try again."}
+
+    print(content)
     return {"quotes": content}

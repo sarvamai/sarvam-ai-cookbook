@@ -1,7 +1,7 @@
 # Sarvam Indic Soundbox AI (Inspired from Paytm and PhonePe soundboxes)
 This Agent enables Indian merchants via their Soundbox (lets say Paytm or PhonePe Soundbox) to get insights about their Sales, How to grow their busines? in their local language of choice and also enables organisations like Paytm and PhonePe to connect with their merchants in a easier manner in indic languages.
 
-This uses Sarvam ASR, Language Indentification, Sarvam-M Thinking Model and TTS - all built on Indic Stack.
+This uses Sarvam ASR (`saaras:v3`), Language Identification, the Sarvam-105B chat model and TTS (`bulbul:v3`) - all built on the Indic Stack.
 
 ## Project Structure
 
@@ -41,11 +41,11 @@ This uses Sarvam ASR, Language Indentification, Sarvam-M Thinking Model and TTS 
 
 4.  **Set up Sarvam API Key:**
     Create a file named `.env` in the root of the project directory (next to `app.py`).
-    Add your (Sarvam API key)[https://dashboard.sarvam.ai] to this file:
+    Add your [Sarvam API key](https://dashboard.sarvam.ai) to this file:
     ```
     SARVAM_API_KEY='YOUR_SARVAM_API_KEY_HERE'
     ```
-    Replace `YOUR_SARVAM_API_KEY_HERE` with your actual key (e.g., `044317b1-21ac-402f-9b65-1d98a3dcf2fd` as per your example, but ideally use your own).
+    Replace `YOUR_SARVAM_API_KEY_HERE` with your actual key.
 
 5.  **Modify `merchant_context.md`:**
     Update the `merchant_context.md` file with any specific sales data, product combos, or other information relevant to the merchant.

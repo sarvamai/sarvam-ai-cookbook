@@ -18,6 +18,16 @@ SARVAM_API_KEY=<your API key>
 
 Most examples are written in **Python**, but the concepts can be adapted to any programming language.
 
+#### Contributing
+
+We welcome examples and fixes! Before opening a pull request:
+
+1. Read [CONTRIBUTING.MD](CONTRIBUTING.MD) for security and API standards.
+2. Copy [`examples/TEMPLATE/`](examples/TEMPLATE/) for new notebook recipes.
+3. Run local validation: `make check`
+
+CI checks every PR for secret leaks and validates structure for **new** notebook recipes. Current Sarvam models are listed in `scripts/sarvam_api_rules.json` (refreshed weekly from [docs.sarvam.ai](https://docs.sarvam.ai)).
+
 #### Resources
 
 - [Sarvam AI Documentation](https://docs.sarvam.ai)

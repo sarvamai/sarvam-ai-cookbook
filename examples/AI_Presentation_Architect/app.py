@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 import io
-import pandas as pd
+import re
 from pptx import Presentation
 from pptx.util import Inches
 
@@ -30,12 +30,17 @@ def generate_english_presentation(topic: str, api_key: str, slide_count: int) ->
     You are an expert content creator. Generate a {slide_count}-slide presentation for the topic: '{topic}'.
     Return a single JSON array of objects. Each object must have "title" and "content" (a string with 3-4 bullet points, separated by newlines).
     """
-    payload = {"model": "sarvam-m", "messages": [{"role": "user", "content": prompt}]}
+    payload = {"model": "sarvam-105b", "max_tokens": 4000, "messages": [{"role": "user", "content": prompt}]}
     response = requests.post(CHAT_API_URL, headers=headers, json=payload)
     response.raise_for_status()
     response_text = response.json()["choices"][0]["message"]["content"]
-    if response_text.startswith("```json"):
-        response_text = response_text[7:-3].strip()
+    if not response_text:
+        raise ValueError("The model returned an empty response. Please try again, or reduce the slide count.")
+    # Strip code fences if the model wrapped the JSON in them.
+    response_text = response_text.strip()
+    if response_text.startswith("```"):
+        response_text = re.sub(r"^```(?:json)?\s*", "", response_text)
+        response_text = re.sub(r"\s*```$", "", response_text).strip()
     return json.loads(response_text)
 
 def translate_content(text: str, target_lang: str, api_key: str) -> str:

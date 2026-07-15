@@ -112,7 +112,8 @@ WhatsApp और Facebook पर अपनी दुकान की जानक
         'Content-Type': 'application/json'
     }
     payload = {
-        'model': 'sarvam-m',
+        'model': 'sarvam-105b',
+        'max_tokens': 2000,
         'messages': [
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_text}
