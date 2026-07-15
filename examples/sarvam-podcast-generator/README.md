@@ -80,6 +80,8 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
    ```
 
    > **Note:** As shipped, `lib/job-store.ts` always uses an in-memory job map (no Redis client wired up yet) and `lib/upload-audio.ts`/`lib/uploadthing.ts` always store audio as in-memory base64 data URLs regardless of `REDIS_URL`/`UPLOADTHING_TOKEN`. This is fine for local single-process development but won't survive a server restart or work across multiple serverless instances — wire up real Redis and UploadThing clients before deploying.
+   >
+   > This stub also has a side effect during generation: each TTS segment's "URL" is actually its full base64 audio data (several hundred KB), and Inngest persists that as the step's return value. This occasionally trips Inngest's per-step output size limit (`output_too_large` in the `inngest dev` logs) — verified during testing, where a 22-segment Hindi podcast hit it 4 times but recovered via automatic retry with no data loss, just extra latency. Wiring up a real UploadThing token resolves this, since steps would then store a short real URL instead of the raw audio data.
 
 4. **Run the development servers**
    
