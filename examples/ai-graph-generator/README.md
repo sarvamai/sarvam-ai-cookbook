@@ -15,7 +15,7 @@ An intelligent graph and chart generator that transforms natural language prompt
 **Prerequisites**
 Before you begin, ensure you have:
 
-- Python 3.7 or newer installed.
+- Python 3.9 or newer installed.
 - A valid Sarvam AI API key.
 
 **Installation**
