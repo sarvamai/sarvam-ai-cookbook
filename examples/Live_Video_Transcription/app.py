@@ -93,12 +93,12 @@ class StreamingSession:
         client = AsyncSarvamAI(api_subscription_key=SARVAM_API_KEY)
         logger.info(f"[{self.mode}] opening persistent streaming connection...")
 
-        if self.mode == "transcribe":
-            conn = client.speech_to_text_streaming.connect(
-                language_code=config.API_LANGUAGE, model="saaras:v3"
-            )
-        else:
-            conn = client.speech_to_text_translate_streaming.connect(model="saaras:v3")
+        # Both modes go through the same unified speech_to_text_streaming
+        # endpoint; the `mode` param ("transcribe" vs "translate") picks the
+        # behavior, and both still call ws.transcribe() to send audio.
+        conn = client.speech_to_text_streaming.connect(
+            language_code=config.API_LANGUAGE, model="saaras:v3", mode=self.mode
+        )
 
         async with conn as ws:
             logger.info(f"[{self.mode}] connected")
@@ -108,10 +108,7 @@ class StreamingSession:
                     audio_b64 = await self.queue.get()
                     if audio_b64 is None:  # stop sentinel
                         break
-                    if self.mode == "transcribe":
-                        await ws.transcribe(audio=audio_b64)
-                    else:
-                        await ws.translate(audio=audio_b64)
+                    await ws.transcribe(audio=audio_b64)
 
                 # Flush any buffered audio so the final segment is emitted.
                 await ws.flush()
