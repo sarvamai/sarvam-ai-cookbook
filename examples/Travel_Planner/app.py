@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from sarvam_utils import generate_itinerary
+from sarvam_utils import generate_itinerary, generate_travel_tips
 
 # Language names used in the generation prompt (the model produces well-structured
 # markdown directly in these languages, which avoids translating markdown).
@@ -105,10 +105,8 @@ if st.session_state.get('trip'):
             )
             itinerary = itinerary_response.get('choices', [{}])[0].get('message', {}).get('content', '')
 
-            tips_response = generate_itinerary(
+            tips_response = generate_travel_tips(
                 destination=trip['destination'],
-                duration=1,
-                interests=["Practical Tips"],
                 budget=trip['budget'],
                 language=LANG_NAMES.get(lang, 'English')
             )
@@ -127,4 +125,4 @@ st.markdown("""
 <div style='text-align: center'>
     <p>Powered by Sarvam AI | Your trusted travel companion</p>
 </div>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
