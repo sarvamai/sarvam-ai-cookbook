@@ -4,10 +4,10 @@ A powerful AI-driven document analysis and podcast generation tool built with Ne
 
 ## ✨ Features
 
-- 📄 **Advanced PDF Parsing**: OCR processing using Mistral's latest OCR API
-- 🤖 **AI Script Generation**: Intelligent podcast script generation using Sarvam M model
+- 📄 **Advanced PDF Parsing**: Document parsing using Sarvam Document Intelligence (Sarvam Vision)
+- 🤖 **AI Script Generation**: Intelligent podcast script generation using Sarvam 105B
 - 🌐 **Multi-Language Support**: Support for 11 Indian languages including Hindi, Tamil, Telugu, Bengali, and more
-- 🎙️ **High-Quality TTS**: AI-powered text-to-speech using Sarvam Bulbul-v2 TTS API
+- 🎙️ **High-Quality TTS**: AI-powered text-to-speech using Sarvam Bulbul v3 TTS API
 - ⚡ **Background Processing**: Reliable background job processing with Inngest
 - 📊 **Real-time Status Tracking**: Live updates on podcast generation progress
 - 🎧 **Interactive Audio Player**: Built-in audio player with transcript display and segment navigation
@@ -29,12 +29,12 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 
 ### Backend & Processing
 - **Background Jobs**: Inngest for reliable async processing
-- **Job Tracking**: Redis for job status management
-- **File Storage**: UploadThing for audio file management
+- **Job Tracking**: In-memory job store (see note below); swap in Redis for production
+- **File Storage**: UploadThing for audio file management (currently stubbed to in-memory data URLs — see note below)
 - **APIs**: 
-  - Sarvam M (Script Generation)
-  - Sarvam Bulbul-v2 TTS (Text-to-Speech)
-  - Mistral OCR (PDF Parsing)
+  - Sarvam 105B (Script Generation)
+  - Sarvam Bulbul v3 TTS (Text-to-Speech)
+  - Sarvam Document Intelligence / Sarvam Vision (PDF Parsing)
 
 ### File Handling
 - **Upload**: React Dropzone
@@ -47,10 +47,8 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 
 - Node.js 18+ installed
 - Sarvam AI API key ([get one here](https://www.sarvam.ai/))
-- Mistral AI API key ([get one here](https://mistral.ai/))
-- Redis instance (Vercel Integration)
-- UploadThing account ([get one here](https://uploadthing.com/))
 - Inngest account ([get one here](https://inngest.com/))
+- Redis instance and UploadThing account — optional for local dev (see note below); required for a real deployment
 
 ### Installation
 
@@ -71,15 +69,19 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
    # Sarvam AI API Configuration
    SARVAM_API_KEY=your_sarvam_api_key_here
    
-   # Mistral AI API Configuration
-   MISTRAL_API_KEY=your_mistral_api_key_here
+   # Redis Configuration (for job tracking) — optional locally, see note below
+   REDIS_URL=your_redis_url
    
-   # Redis Configuration (for job tracking)
-   Go to Vercel Integrations or use any redis local or hosted instance
-   
-   # UploadThing Configuration (for file storage)
+   # UploadThing Configuration (for file storage) — optional locally, see note below
    UPLOADTHING_TOKEN=your_uploadthing_token
+
+   # Inngest Configuration (required in production)
+   INNGEST_SIGNING_KEY=your_inngest_signing_key
    ```
+
+   > **Note:** As shipped, `lib/job-store.ts` always uses an in-memory job map (no Redis client wired up yet) and `lib/upload-audio.ts`/`lib/uploadthing.ts` always store audio as in-memory base64 data URLs regardless of `REDIS_URL`/`UPLOADTHING_TOKEN`. This is fine for local single-process development but won't survive a server restart or work across multiple serverless instances — wire up real Redis and UploadThing clients before deploying.
+   >
+   > This stub also has a side effect during generation: each TTS segment's "URL" is actually its full base64 audio data (several hundred KB), and Inngest persists that as the step's return value. This occasionally trips Inngest's per-step output size limit (`output_too_large` in the `inngest dev` logs) — verified during testing, where a 22-segment Hindi podcast hit it 4 times but recovered via automatic retry with no data loss, just extra latency. Wiring up a real UploadThing token resolves this, since steps would then store a short real URL instead of the raw audio data.
 
 4. **Run the development servers**
    
@@ -101,9 +103,9 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 1. **Select Language**: Choose your preferred language for the podcast from the dropdown selector
 2. **Upload PDF**: Drag and drop or click to upload a PDF document
 3. **Background Processing**: The app will automatically:
-   - Parse the PDF content using Mistral OCR API
-   - Generate a conversational script using Sarvam M Model API
-   - Generate high-quality audio using Bulbul-v2 TTS API
+   - Parse the PDF content using Sarvam Document Intelligence
+   - Generate a conversational script using Sarvam 105B
+   - Generate high-quality audio using Sarvam Bulbul v3 TTS API
    - Process everything in the background using Inngest
 4. **Real-time Updates**: Monitor the progress with live status updates
 5. **Listen & Interact**: Use the built-in audio player with features like:
@@ -130,7 +132,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 ## 🔌 API Endpoints
 
 ### `POST /api/parse-pdf`
-Parses PDF documents using Mistral OCR API.
+Parses PDF documents using Sarvam Document Intelligence.
 
 **Request**: FormData with PDF file
 **Response**: Extracted text content, images, and metadata
@@ -161,7 +163,7 @@ Handles cleanup of temporary audio files.
 ```
 ├── app/
 │   ├── api/
-│   │   ├── parse-pdf/route.ts           # PDF parsing with Mistral OCR
+│   │   ├── parse-pdf/route.ts           # PDF parsing with Sarvam Document Intelligence
 │   │   ├── generate-podcast/route.ts    # Podcast generation initiation
 │   │   ├── job-status/[jobId]/route.ts  # Job status tracking
 │   │   ├── cleanup-audio/route.ts       # Audio file cleanup
@@ -182,7 +184,7 @@ Handles cleanup of temporary audio files.
 │   └── audio-cleanup.ts                 # Automatic file cleanup
 ├── lib/
 │   ├── inngest.ts                       # Inngest client configuration
-│   ├── job-store.ts                     # Redis job management
+│   ├── job-store.ts                     # In-memory job store (swap for Redis in production)
 │   ├── uploadthing.ts                   # UploadThing configuration
 │   ├── upload-audio.ts                  # Audio file upload utilities
 │   ├── cleanup-audio-files.ts           # File cleanup utilities
@@ -213,12 +215,11 @@ Handles cleanup of temporary audio files.
 
 - **Hot Reload**: Both Next.js and Inngest support hot reloading
 - **Background Job Testing**: Use Inngest dashboard to monitor and debug jobs
-- **File Upload Testing**: UploadThing provides development URLs
-- **Redis Monitoring**: Use Redis CLI or GUI tools to monitor job states
+- **File Upload Testing**: UploadThing provides development URLs (once wired up to a real client)
 
 ## ⚠️ Important Notes
 
-**PDF Size Limitations**: For optimal performance, please upload PDFs with moderate content length. Very large PDFs or documents with extensive text may cause podcast generation to fail due to the context length limitations of the Sarvam M model. The system automatically chunks large content but very extensive documents may still face limitations.
+**PDF Size Limitations**: For optimal performance, please upload PDFs with moderate content length. Very large PDFs or documents with extensive text may cause podcast generation to fail due to the context length limitations of the Sarvam 105B model. The system automatically chunks large content but very extensive documents may still face limitations.
 
 ## 📝 License
 
@@ -227,7 +228,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🔗 Links
 
 - [Sarvam AI Documentation](https://docs.sarvam.ai/)
-- [Mistral AI Documentation](https://docs.mistral.ai/)
 - [Inngest Documentation](https://www.inngest.com/docs)
 - [UploadThing Documentation](https://docs.uploadthing.com/)
 - [Next.js Documentation](https://nextjs.org/docs)

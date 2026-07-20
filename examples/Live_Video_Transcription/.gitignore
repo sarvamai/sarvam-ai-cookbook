@@ -37,8 +37,6 @@ Thumbs.db
 
 # Application specific
 static/*.mp4
-!static/demo_video.mp4
-!static/demo_video_extended.mp4
 *.log
 .env
 
