@@ -1,0 +1,400 @@
+/* Typefaces pulled directly from sarvam.ai's own site: "Matter" for body
+   copy, "Season Mix" for display/heading text and buttons. Both are variable
+   fonts hosted on Sarvam's own CDN. */
+@font-face {
+    font-family: "Matter";
+    src: url("https://www.sarvam.ai/fonts/MatterUprights-VF.woff2") format("woff2-variations"),
+         url("https://www.sarvam.ai/fonts/MatterUprights-VF.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Season Mix";
+    src: url("https://www.sarvam.ai/fonts/SeasonMixVFUprights.woff2") format("woff2-variations"),
+         url("https://www.sarvam.ai/fonts/SeasonMixVFUprights.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* Colors lifted from sarvam.ai: navy text/button gradient, light
+       neutral surfaces, and their green + blue accent pair. */
+    --sv-bg: #fafafa;
+    --sv-surface: #ffffff;
+    --sv-border: #eceef3;
+    --sv-text: #1e2033;
+    --sv-text-soft: #3a3f5c;
+    --sv-text-muted: #6b6f85;
+    --sv-green: #83c040;
+    --sv-green-dark: #496d21;
+    --sv-green-light: #e3f1d8;
+    --sv-blue: #6a88e2;
+    --sv-radius-lg: 28px;
+    --sv-radius-md: 16px;
+    --sv-radius-pill: 999px;
+    --sv-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Matter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--sv-bg);
+    color: var(--sv-text);
+    line-height: 1.55;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 20px;
+}
+
+/* Header */
+.header {
+    position: relative;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.header::before {
+    content: "";
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 1px;
+    background: radial-gradient(circle, var(--sv-blue) 0%, transparent 100%);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    margin-bottom: 18px;
+    border-radius: var(--sv-radius-pill);
+    background: var(--sv-green-light);
+    color: var(--sv-green-dark);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sv-green);
+}
+
+.header h1 {
+    font-family: "Season Mix", "Matter", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 10px;
+}
+
+.header p {
+    color: var(--sv-text-soft);
+    font-size: 1rem;
+}
+
+/* Main card */
+.main-content {
+    background: var(--sv-surface);
+    border: 1px solid var(--sv-border);
+    border-radius: var(--sv-radius-lg);
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(30, 32, 51, 0.04), 0 24px 48px -24px rgba(30, 32, 51, 0.14);
+}
+
+/* Mode switch: segmented Video / Live video control, iOS-style sliding thumb */
+.mode-switch {
+    position: relative;
+    display: inline-flex;
+    gap: 2px;
+    padding: 4px;
+    margin-bottom: 20px;
+    background: var(--sv-bg);
+    border: 1px solid var(--sv-border);
+    border-radius: var(--sv-radius-pill);
+}
+
+.mode-switch-thumb {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    border-radius: var(--sv-radius-pill);
+    background: linear-gradient(to bottom, var(--sv-text-soft) 0%, var(--sv-text) 100%);
+    box-shadow: 0 4px 10px rgba(30, 32, 51, 0.18);
+    transition: transform 0.3s var(--sv-ease);
+}
+
+.mode-switch[data-mode="live"] .mode-switch-thumb {
+    transform: translateX(100%);
+}
+
+.mode-option {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: none;
+    background: transparent;
+    padding: 9px 22px;
+    border-radius: var(--sv-radius-pill);
+    font-family: "Season Mix", "Matter", sans-serif;
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--sv-text-muted);
+    cursor: pointer;
+    transition: color 0.25s var(--sv-ease);
+}
+
+.mode-option.active {
+    color: #fff;
+}
+
+.mode-option:focus-visible {
+    outline: 2px solid var(--sv-blue);
+    outline-offset: 2px;
+}
+
+.live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c0392b;
+    opacity: 0.6;
+}
+
+.mode-option.active .live-dot {
+    opacity: 1;
+    animation: live-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes live-dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Stage: an uploaded video's playback or a live camera preview, same
+   <video> element either way, plus caption overlay, YouTube-style but on-brand */
+.stage {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: var(--sv-radius-md);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.stage-video {
+    display: block;
+    width: 100%;
+    max-height: 480px;
+}
+
+.caption-overlay {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    max-width: 85%;
+    padding: 10px 22px;
+    background: linear-gradient(to bottom, rgba(58, 63, 92, 0.92) 0%, rgba(30, 32, 51, 0.92) 100%);
+    color: #fff;
+    font-family: "Season Mix", "Matter", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+    border-radius: var(--sv-radius-pill);
+    box-shadow: 0 8px 24px rgba(30, 32, 51, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s var(--sv-ease);
+}
+
+.caption-overlay.visible {
+    opacity: 1;
+}
+
+/* Crossfade the text itself on each revision (see renderCaptionNow() in
+   index.html) so an ASR correction reads as an update, not a jump-cut. */
+.caption-overlay-text {
+    display: inline-block;
+    transition: opacity 0.1s ease;
+}
+
+.caption-overlay-text.swapping {
+    opacity: 0;
+}
+
+/* Controls */
+.controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.control-row label {
+    font-weight: 600;
+    color: var(--sv-text-soft);
+    min-width: 130px;
+    font-size: 0.9rem;
+}
+
+/* Visible (not hover-only) caveat shown under a control -- e.g. the
+   Auto-detect language-lock delay -- so it can't be missed like a title
+   tooltip can. */
+.field-hint {
+    margin: -8px 0 0 144px;
+    color: var(--sv-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    max-width: 480px;
+}
+
+.field-hint[hidden] {
+    display: none;
+}
+
+.control-row select,
+.control-row input[type="file"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 14px;
+    border: 1px solid var(--sv-border);
+    border-radius: var(--sv-radius-md);
+    background: var(--sv-bg);
+    color: var(--sv-text);
+    font-family: "Matter", sans-serif;
+    font-size: 0.9rem;
+    transition: border-color 0.2s var(--sv-ease);
+}
+
+.control-row select:focus-visible,
+.control-row input[type="file"]:focus-visible {
+    outline: 2px solid var(--sv-blue);
+    outline-offset: 1px;
+}
+
+/* Style the native file-picker button as a small on-brand pill instead of
+   the default OS button. */
+.control-row input[type="file"]::file-selector-button {
+    font-family: "Season Mix", "Matter", sans-serif;
+    font-weight: 500;
+    padding: 7px 16px;
+    margin-right: 12px;
+    border: none;
+    border-radius: var(--sv-radius-pill);
+    background: var(--sv-text);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.control-row input[type="file"]::file-selector-button:hover {
+    opacity: 0.85;
+}
+
+.btn-primary {
+    font-family: "Season Mix", "Matter", sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 12px 28px;
+    border: none;
+    border-radius: var(--sv-radius-pill);
+    color: #fff;
+    background: linear-gradient(to bottom, var(--sv-text-soft) 0%, var(--sv-text) 100%);
+    cursor: pointer;
+    transition: transform 0.35s var(--sv-ease), opacity 0.2s ease;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.btn-primary:focus-visible {
+    outline: 2px solid var(--sv-blue);
+    outline-offset: 2px;
+}
+
+.status {
+    padding: 7px 16px;
+    border-radius: var(--sv-radius-pill);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--sv-border);
+    color: var(--sv-text-soft);
+}
+
+.status.success {
+    background: var(--sv-green-light);
+    color: var(--sv-green-dark);
+}
+
+.status.error {
+    background: #fdecea;
+    color: #c0392b;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 28px;
+    color: var(--sv-text-muted);
+    font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+    .control-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .control-row label {
+        min-width: unset;
+    }
+
+    .mode-switch {
+        width: 100%;
+    }
+
+    .mode-option {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .field-hint {
+        margin-left: 0;
+        max-width: none;
+    }
+}

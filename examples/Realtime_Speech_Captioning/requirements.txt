@@ -1,0 +1,14 @@
+sarvamai>=0.1.28
+python-dotenv>=1.0.0
+numpy>=1.26.0
+scipy>=1.11.0
+soundfile>=0.12.1
+ipython>=8.0.0
+websockets>=14.0  # app.py's realtime client passes additional_headers= to connect(), only valid from 14.0 on (12.x-13.x routed to the legacy client, which only accepts extra_headers=)
+
+# Web app (app.py) -- browser upload + live YouTube-style caption overlay
+Flask>=2.3.3
+Flask-SocketIO>=5.3.6
+python-socketio>=5.9.0
+python-engineio>=4.7.1
+simple-websocket>=1.0.0

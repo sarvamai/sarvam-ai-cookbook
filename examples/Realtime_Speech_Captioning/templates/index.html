@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Speech Captioning - Sarvam AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <span class="badge">Powered by Sarvam AI</span>
+            <h1>Real-Time Speech Captioning</h1>
+            <p>Live captions over Sarvam's streaming speech-to-text (saaras:v3-realtime)</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input mode: Video upload vs Live camera -->
+            <div class="mode-switch" id="modeSwitch" data-mode="video" role="tablist" aria-label="Input source">
+                <span class="mode-switch-thumb"></span>
+                <button type="button" class="mode-option active" data-mode="video" role="tab" aria-selected="true">
+                    Video
+                </button>
+                <button type="button" class="mode-option" data-mode="live" role="tab" aria-selected="false">
+                    <span class="live-dot"></span>Live video
+                </button>
+            </div>
+
+            <!-- Stage: either a played-back upload or a live camera preview, same
+                 video element either way, with a shared caption overlay -->
+            <div class="stage">
+                <video id="demoVideo" controls crossorigin="anonymous" class="stage-video" playsinline>
+                    Your browser doesn't support HTML5 video.
+                </video>
+                <div id="captionOverlay" class="caption-overlay"><span id="captionOverlayText" class="caption-overlay-text"></span></div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-panel">
+                <div class="control-row" id="videoUploadRow">
+                    <label for="videoUpload">Video</label>
+                    <input type="file" id="videoUpload" accept="video/*" />
+                </div>
+
+                <div class="control-row">
+                    <label for="languageSelect">Spoken language</label>
+                    <select id="languageSelect">
+                        <option value="unknown" selected>Auto-detect</option>
+                        <option value="hi-IN">Hindi</option>
+                        <option value="bn-IN">Bengali</option>
+                        <option value="gu-IN">Gujarati</option>
+                        <option value="kn-IN">Kannada</option>
+                        <option value="ml-IN">Malayalam</option>
+                        <option value="mr-IN">Marathi</option>
+                        <option value="od-IN">Odia</option>
+                        <option value="pa-IN">Punjabi</option>
+                        <option value="ta-IN">Tamil</option>
+                        <option value="te-IN">Telugu</option>
+                        <option value="en-IN">English</option>
+                        <option value="as-IN">Assamese</option>
+                        <option value="ur-IN">Urdu</option>
+                        <option value="ne-IN">Nepali</option>
+                        <option value="kok-IN">Konkani</option>
+                        <option value="ks-IN">Kashmiri</option>
+                        <option value="sd-IN">Sindhi</option>
+                        <option value="sa-IN">Sanskrit</option>
+                        <option value="sat-IN">Santali</option>
+                        <option value="mni-IN">Manipuri</option>
+                        <option value="brx-IN">Bodo</option>
+                        <option value="mai-IN">Maithili</option>
+                        <option value="doi-IN">Dogri</option>
+                    </select>
+                </div>
+                <p id="languageHint" class="field-hint">
+                    Auto-detect briefly guesses English for non-English speech on this beta model before it
+                    locks onto the right language -- pick your language explicitly for instantly accurate captions.
+                </p>
+
+                <div class="control-row">
+                    <label for="captionStyleSelect">Captions</label>
+                    <select id="captionStyleSelect">
+                        <option value="transcribe">Original language</option>
+                        <option value="translate">English</option>
+                        <option value="codemix" selected>Code-mixed (Hinglish-style)</option>
+                        <optgroup label="Translate to...">
+                            <option value="xlate:hi-IN">Hindi</option>
+                            <option value="xlate:bn-IN">Bengali</option>
+                            <option value="xlate:gu-IN">Gujarati</option>
+                            <option value="xlate:kn-IN">Kannada</option>
+                            <option value="xlate:ml-IN">Malayalam</option>
+                            <option value="xlate:mr-IN">Marathi</option>
+                            <option value="xlate:od-IN">Odia</option>
+                            <option value="xlate:pa-IN">Punjabi</option>
+                            <option value="xlate:ta-IN">Tamil</option>
+                            <option value="xlate:te-IN">Telugu</option>
+                            <option value="xlate:as-IN">Assamese</option>
+                            <option value="xlate:ur-IN">Urdu</option>
+                            <option value="xlate:ne-IN">Nepali</option>
+                            <option value="xlate:kok-IN">Konkani</option>
+                            <option value="xlate:ks-IN">Kashmiri</option>
+                            <option value="xlate:sd-IN">Sindhi</option>
+                            <option value="xlate:sa-IN">Sanskrit</option>
+                            <option value="xlate:sat-IN">Santali</option>
+                            <option value="xlate:mni-IN">Manipuri</option>
+                            <option value="xlate:brx-IN">Bodo</option>
+                            <option value="xlate:mai-IN">Maithili</option>
+                            <option value="xlate:doi-IN">Dogri</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="control-row">
+                    <button id="toggleCaptions" class="btn-primary">Start captions</button>
+                    <span id="status" class="status">Upload a video to begin, or switch to Live video</span>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Demo: real-time captions using Sarvam AI's streaming speech-to-text API</p>
+        </footer>
+    </div>
+
+    <script>
+        const socket = io();
+
+        const video = document.getElementById('demoVideo');
+        const videoUpload = document.getElementById('videoUpload');
+        const videoUploadRow = document.getElementById('videoUploadRow');
+        const languageSelect = document.getElementById('languageSelect');
+        const languageHint = document.getElementById('languageHint');
+        const captionStyleSelect = document.getElementById('captionStyleSelect');
+        const toggleButton = document.getElementById('toggleCaptions');
+        const status = document.getElementById('status');
+        const captionOverlay = document.getElementById('captionOverlay');
+        const captionOverlayText = document.getElementById('captionOverlayText');
+        const modeSwitch = document.getElementById('modeSwitch');
+        const modeOptions = modeSwitch.querySelectorAll('.mode-option');
+
+        let inputMode = 'video'; // 'video' | 'live'
+        let videoLoaded = false;
+        let captioning = false;
+        let audioContext, mediaStreamSource, processor;
+        let liveCameraStream = null; // webcam+mic stream, live for as long as the Live tab is active
+        let captionHideTimer = null;
+
+        function updateStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function idleStatusMessage() {
+            if (inputMode === 'live') return liveCameraStream ? 'Ready' : 'Click "Start captions" to begin';
+            return videoLoaded ? 'Ready' : 'Upload a video to begin';
+        }
+
+        function updateLanguageHint() {
+            languageHint.hidden = languageSelect.value !== 'unknown';
+        }
+        languageSelect.addEventListener('change', updateLanguageHint);
+        updateLanguageHint();
+
+        // --- Live camera preview: acquired for the whole time the Live tab is
+        // active, independent of whether captioning itself is running, same
+        // as a normal video-call preview. ---
+        async function startLivePreview() {
+            try {
+                liveCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                video.srcObject = liveCameraStream;
+                video.muted = true; // local monitor -- never play back your own mic
+                video.controls = false;
+                await video.play();
+                updateStatus(idleStatusMessage(), 'success');
+            } catch (error) {
+                updateStatus(`Could not access camera/mic: ${error.message}`, 'error');
+            }
+        }
+
+        function stopLivePreview() {
+            if (liveCameraStream) {
+                liveCameraStream.getTracks().forEach(function (track) { track.stop(); });
+                liveCameraStream = null;
+            }
+            video.srcObject = null;
+            video.muted = false;
+            video.controls = true;
+        }
+
+        // --- Mode switch: Video upload vs Live camera ---
+        // Switching modes while captioning is active tears down whatever
+        // session/recording was running, same as a manual "Stop captions".
+        modeOptions.forEach(function (option) {
+            option.addEventListener('click', function () {
+                const mode = option.dataset.mode;
+                if (mode === inputMode) return;
+                if (captioning) stopCaptioning();
+
+                if (inputMode === 'live') stopLivePreview();
+                inputMode = mode;
+                modeSwitch.dataset.mode = mode;
+                modeOptions.forEach(function (o) {
+                    o.classList.toggle('active', o.dataset.mode === mode);
+                    o.setAttribute('aria-selected', o.dataset.mode === mode ? 'true' : 'false');
+                });
+
+                const isLive = mode === 'live';
+                videoUploadRow.hidden = isLive;
+                toggleButton.textContent = 'Start captions';
+                if (isLive) {
+                    video.src = '';
+                    video.removeAttribute('src');
+                    startLivePreview();
+                } else {
+                    updateStatus(idleStatusMessage(), 'info');
+                }
+            });
+        });
+
+        // --- Video upload: play the local file directly, no server upload needed ---
+        videoUpload.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            video.src = URL.createObjectURL(file);
+            video.load();
+            videoLoaded = true;
+            updateStatus(`Loaded: ${file.name}`, 'info');
+        });
+
+        // --- Socket.IO events ---
+        socket.on('connect', function () {
+            updateStatus(idleStatusMessage(), 'success');
+        });
+
+        socket.on('caption', function (data) {
+            showCaption(data && data.text);
+        });
+
+        socket.on('status', function (data) {
+            if (data && data.message) updateStatus(data.message, 'info');
+        });
+
+        socket.on('error', function (data) {
+            updateStatus((data && data.message) || 'Connection error', 'error');
+            // The server already tore down its side of a failed session, so
+            // reset the UI to a clean "start again" state rather than leaving
+            // the button stuck on "Stop captions" for a session that's dead.
+            if (captioning) {
+                captioning = false;
+                toggleButton.textContent = 'Start captions';
+                stopRecording();
+            }
+        });
+
+        socket.on('disconnect', function () {
+            updateStatus('Disconnected', 'error');
+        });
+
+        // saaras:v3-realtime's `text` is cumulative for the whole utterance --
+        // it keeps growing until a real pause ends the segment, which during
+        // continuous pause-free speech can mean one utterance covers a full
+        // 10+ second monologue. Showing that raw string would just grow into
+        // an ever-expanding block of text instead of looking like captions,
+        // so only the trailing window is ever displayed on screen.
+        const CAPTION_WORD_WINDOW = 14;
+
+        function trailingWords(text, wordCount) {
+            const words = text.trim().split(/\s+/);
+            if (words.length <= wordCount) return text;
+            return words.slice(-wordCount).join(' ');
+        }
+
+        // --- Caption overlay, YouTube-style: shows the latest line, fades if stale ---
+        //
+        // saaras:v3-realtime revises its own partial transcript as more audio
+        // arrives (words get added, occasionally a trailing word or two gets
+        // corrected away), and updates land every ~250-500ms. Rendering every
+        // single one straight to the DOM is what read as "jitter" / bad
+        // appending -- the caption visibly flickered and back-tracked several
+        // times a second. Debouncing lets rapid-fire revisions settle before
+        // anything hits the screen, while maxWait guarantees a caption is
+        // never held back for more than half a second, so it still feels live.
+        const CAPTION_DEBOUNCE_MS = 100;
+        const CAPTION_MAX_WAIT_MS = 350;
+
+        let pendingCaptionText = null;
+        let captionDebounceTimer = null;
+        let lastCaptionRenderTime = 0;
+
+        function renderCaptionNow() {
+            captionDebounceTimer = null;
+            lastCaptionRenderTime = Date.now();
+            if (pendingCaptionText === null || pendingCaptionText === captionOverlayText.textContent) {
+                return;
+            }
+            // Quick crossfade instead of a hard text swap, so a revision
+            // reads as an update rather than a jump-cut.
+            captionOverlayText.classList.add('swapping');
+            setTimeout(() => {
+                captionOverlayText.textContent = pendingCaptionText;
+                captionOverlayText.classList.remove('swapping');
+            }, 90);
+
+            captionOverlay.classList.add('visible');
+            if (captionHideTimer) clearTimeout(captionHideTimer);
+            captionHideTimer = setTimeout(() => {
+                captionOverlay.classList.remove('visible');
+            }, 6000);
+        }
+
+        function scheduleCaptionRender() {
+            const sinceLastRender = Date.now() - lastCaptionRenderTime;
+            if (sinceLastRender >= CAPTION_MAX_WAIT_MS) {
+                renderCaptionNow();
+                return;
+            }
+            if (captionDebounceTimer) clearTimeout(captionDebounceTimer);
+            const wait = Math.min(CAPTION_DEBOUNCE_MS, CAPTION_MAX_WAIT_MS - sinceLastRender);
+            captionDebounceTimer = setTimeout(renderCaptionNow, wait);
+        }
+
+        function showCaption(text) {
+            if (!text) return;
+            pendingCaptionText = trailingWords(text, CAPTION_WORD_WINDOW);
+            scheduleCaptionRender();
+        }
+
+        // --- Start/stop toggle ---
+        toggleButton.addEventListener('click', function () {
+            if (captioning) {
+                stopCaptioning();
+            } else {
+                startCaptioning();
+            }
+        });
+
+        async function startCaptioning() {
+            if (inputMode === 'video' && !videoLoaded) {
+                updateStatus('Please upload a video first', 'error');
+                return;
+            }
+            if (inputMode === 'live' && !liveCameraStream) {
+                await startLivePreview();
+                if (!liveCameraStream) return; // camera/mic permission denied or failed
+            }
+            captioning = true;
+            toggleButton.textContent = 'Stop captions';
+            updateStatus(
+                languageSelect.value === 'unknown'
+                    ? 'Detecting language... (may briefly show English for non-English speech)'
+                    : 'Starting captions...',
+                'info'
+            );
+
+            socket.emit('start_stream', {
+                language_code: languageSelect.value,
+                mode: captionStyleSelect.value,
+            });
+
+            if (!audioContext) startRecording();
+        }
+
+        function stopCaptioning() {
+            captioning = false;
+            toggleButton.textContent = 'Start captions';
+            updateStatus('Captions stopped', 'info');
+            socket.emit('stop_stream');
+            stopRecording();
+            captionOverlay.classList.remove('visible');
+
+            // Clear debounce state so a freshly-started session doesn't
+            // inherit a stale pending caption or render timing from before.
+            if (captionDebounceTimer) clearTimeout(captionDebounceTimer);
+            captionDebounceTimer = null;
+            pendingCaptionText = null;
+            lastCaptionRenderTime = 0;
+            captionOverlayText.textContent = '';
+            captionOverlayText.classList.remove('swapping');
+        }
+
+        // Changing language/caption style mid-stream restarts the connection,
+        // since Saaras only accepts them as connection-time parameters.
+        function restartIfActive() {
+            if (!captioning) return;
+            socket.emit('start_stream', {
+                language_code: languageSelect.value,
+                mode: captionStyleSelect.value,
+            });
+            updateStatus('Switching captions...', 'info');
+
+            // The new connection starts a fresh utterance -- don't let a
+            // leftover caption from the old language/mode linger on screen.
+            if (captionDebounceTimer) clearTimeout(captionDebounceTimer);
+            captionDebounceTimer = null;
+            pendingCaptionText = null;
+            lastCaptionRenderTime = 0;
+            captionOverlayText.textContent = '';
+            captionOverlay.classList.remove('visible');
+        }
+        languageSelect.addEventListener('change', restartIfActive);
+        captionStyleSelect.addEventListener('change', restartIfActive);
+
+        // Pausing the video should pause captioning, not error out or keep
+        // streaming silence. The WS session is left open (not stopped) so
+        // resuming is instant instead of reconnecting from scratch.
+        video.addEventListener('pause', function () {
+            if (inputMode === 'video' && captioning) updateStatus('Paused', 'info');
+        });
+        video.addEventListener('play', function () {
+            if (inputMode === 'video' && captioning) updateStatus('Captioning...', 'success');
+        });
+        // A video that reaches the end should stop captioning outright,
+        // same as clicking "Stop captions".
+        video.addEventListener('ended', function () {
+            if (inputMode === 'video' && captioning) stopCaptioning();
+        });
+
+        // --- Audio capture: resample the video's audio track to 16kHz mono WAV ---
+        function resampleAudio(audioBuffer, sourceSampleRate, targetSampleRate) {
+            if (sourceSampleRate === targetSampleRate) return audioBuffer;
+            const ratio = sourceSampleRate / targetSampleRate;
+            const outputLength = Math.floor(audioBuffer.length / ratio);
+            const output = new Int16Array(outputLength);
+            for (let i = 0; i < outputLength; i++) {
+                output[i] = audioBuffer[Math.floor(i * ratio)];
+            }
+            return output;
+        }
+
+        function encodeWAV(audioBuffer, sampleRate) {
+            const length = audioBuffer.length;
+            const arrayBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(arrayBuffer);
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            new Int16Array(arrayBuffer, 44).set(audioBuffer);
+            return arrayBuffer;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const uint8Array = new Uint8Array(buffer);
+            let binaryString = '';
+            const chunkSize = 8192; // avoid stack overflow on String.fromCharCode.apply
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                binaryString += String.fromCharCode.apply(null, uint8Array.slice(i, i + chunkSize));
+            }
+            return btoa(binaryString);
+        }
+
+        function sendAudioChunk(chunks) {
+            if (chunks.length === 0) return;
+            const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+            const combined = new Int16Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunks) {
+                combined.set(chunk, offset);
+                offset += chunk.length;
+            }
+            const resampled = resampleAudio(combined, audioContext.sampleRate, 16000);
+            const base64Audio = arrayBufferToBase64(encodeWAV(resampled, 16000));
+            socket.emit('audio_chunk', { audio: base64Audio });
+        }
+
+        async function startRecording() {
+            try {
+                let stream;
+                if (inputMode === 'live') {
+                    // Camera/mic permission was already granted by
+                    // startLivePreview() when the Live tab was opened -- reuse
+                    // that same stream's audio track rather than requesting a
+                    // second one.
+                    stream = liveCameraStream;
+                    if (!stream || stream.getAudioTracks().length === 0) {
+                        throw new Error('No microphone track available.');
+                    }
+                } else {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    if (video.paused) await video.play();
+                    stream = video.captureStream();
+                    if (stream.getAudioTracks().length === 0) {
+                        throw new Error('No audio track found in this video file.');
+                    }
+                }
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                mediaStreamSource = audioContext.createMediaStreamSource(stream);
+                // Smaller buffer than the 4096-sample default so audio reaches
+                // the server in smaller, more frequent slices.
+                processor = audioContext.createScriptProcessor(2048, 1, 1);
+                // Route through a silent gain node rather than straight to
+                // destination -- ScriptProcessorNode needs to be connected
+                // somewhere to keep firing, but the live camera's own mic
+                // audio must never be routed back out or it'll feed back into
+                // itself (the video element already handles visual monitoring).
+                const silentOutput = audioContext.createGain();
+                silentOutput.gain.value = 0;
+
+                let pendingChunks = [];
+                let lastSendTime = Date.now();
+                const SEND_INTERVAL_MS = 120; // was 250ms, 500ms before that -- lower = less added lag before Sarvam even sees the audio
+
+                processor.onaudioprocess = function (event) {
+                    // captureStream() keeps handing the ScriptProcessor silent
+                    // frames while the video is paused, so skip sending
+                    // audio -- otherwise every pause quietly burns API calls
+                    // streaming nothing but silence.
+                    if (!captioning) return;
+                    if (inputMode === 'video' && video.paused) return;
+                    const audioData = event.inputBuffer.getChannelData(0);
+                    const int16Array = new Int16Array(audioData.length);
+                    for (let i = 0; i < audioData.length; i++) {
+                        int16Array[i] = audioData[i] * 32767;
+                    }
+                    pendingChunks.push(int16Array);
+
+                    const now = Date.now();
+                    if (now - lastSendTime >= SEND_INTERVAL_MS && pendingChunks.length > 0) {
+                        const toSend = pendingChunks;
+                        pendingChunks = [];
+                        sendAudioChunk(toSend);
+                        lastSendTime = now;
+                    }
+                };
+
+                mediaStreamSource.connect(processor);
+                processor.connect(inputMode === 'live' ? silentOutput : audioContext.destination);
+                if (inputMode === 'live') silentOutput.connect(audioContext.destination);
+                updateStatus('Captioning...', 'success');
+            } catch (error) {
+                updateStatus(`Could not capture audio: ${error.message}`, 'error');
+                stopCaptioning();
+            }
+        }
+
+        function stopRecording() {
+            // Only tears down the audio-processing graph -- the live camera
+            // stream itself (if any) keeps running as a preview, managed by
+            // startLivePreview()/stopLivePreview() on the mode switch instead.
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (mediaStreamSource) {
+                mediaStreamSource.disconnect();
+                mediaStreamSource = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+    </script>
+</body>
+</html>
