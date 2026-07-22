@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sarvam Realtime Voice Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#060806;
+    --card:#0b100e;
+    --card-edge:rgba(255,255,255,0.06);
+    --orb-core:#eafff6;
+    --orb-mid:#22d3a4;
+    --orb-deep:#083e33;
+    --ink:#f2f5f3;
+    --ink-muted:rgba(242,245,243,.5);
+    --ink-faint:rgba(242,245,243,.28);
+    --ring:#34e5b0;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(60% 50% at 50% 15%, rgba(34,211,164,.10), transparent 60%),
+      radial-gradient(80% 60% at 50% 100%, rgba(34,211,164,.06), transparent 60%),
+      var(--void);
+    font-family:"Inter", system-ui, sans-serif;
+    color:var(--ink);
+    padding:32px 16px;
+  }
+
+  .frame{
+    width:100%;
+    max-width:388px;
+    height:min(820px, 92vh);
+    background:linear-gradient(180deg, #0d1310 0%, #070a08 100%);
+    border:1px solid var(--card-edge);
+    border-radius:44px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.02),
+      0 30px 80px -20px rgba(0,0,0,.8),
+      0 0 120px -40px rgba(34,211,164,.25);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 22px 4px;
+    font-family:"Sora", sans-serif;
+  }
+  .topbar .side-btn{
+    width:34px; height:34px;
+    border-radius:50%;
+    border:1px solid var(--card-edge);
+    background:rgba(255,255,255,.03);
+    color:var(--ink-muted);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:border-color .2s, color .2s;
+  }
+  .topbar .side-btn:hover{ border-color:rgba(255,255,255,.2); color:var(--ink); }
+  .topbar h1{
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.01em;
+    margin:0;
+    color:var(--ink);
+  }
+
+  /* ---------- status headline ---------- */
+  .status-wrap{
+    padding:26px 30px 0;
+    text-align:center;
+  }
+  .status-line{
+    font-family:"Sora", sans-serif;
+    font-size:21px;
+    font-weight:600;
+    letter-spacing:-.01em;
+    line-height:1.35;
+    min-height:2.7em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:opacity .25s ease;
+  }
+  .status-line .dim{ color:var(--ink-muted); font-weight:500; }
+
+  /* ---------- orb ---------- */
+  .orb-stage{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    min-height:0;
+  }
+  .orb-glow{
+    position:absolute;
+    width:230px; height:230px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(34,211,164,.55), rgba(34,211,164,0) 70%);
+    filter:blur(20px);
+    opacity:.5;
+    transition:opacity .5s ease, transform .5s ease;
+    transform:scale(1);
+  }
+  .orb-svg{
+    width:210px; height:210px;
+    position:relative;
+    filter:drop-shadow(0 0 30px rgba(34,211,164,.35));
+    transition:filter .4s ease;
+  }
+  #turbulence{ animation:swirl 22s linear infinite; }
+  @keyframes swirl{
+    0%{ baseFrequency:.010; }
+  }
+  .orb-core-anim{
+    transform-origin:105px 105px;
+    animation:breathe 4.2s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.035); }
+  }
+
+  body[data-state="idle"] .orb-glow{ opacity:.28; transform:scale(.9); }
+  body[data-state="idle"] .orb-core-anim{ animation-duration:6s; }
+
+  body[data-state="listening"] .orb-glow{ opacity:.55; }
+
+  body[data-state="speaking"] .orb-glow{ opacity:.85; transform:scale(1.12); }
+  body[data-state="speaking"] .orb-core-anim{ animation-duration:1.6s; }
+  body[data-state="speaking"] .orb-svg{ filter:drop-shadow(0 0 46px rgba(34,211,164,.55)); }
+
+  /* ---------- transcript ---------- */
+  .transcript-area{
+    padding:0 34px 8px;
+    text-align:center;
+    min-height:78px;
+  }
+  .subtitle{
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--ink-muted);
+    font-weight:400;
+    transition:opacity .3s ease;
+  }
+  .subtitle.user{ color:rgba(242,245,243,.72); }
+
+  .log-panel{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .35s ease;
+    border-top:1px solid transparent;
+  }
+  .log-panel.open{
+    max-height:220px;
+    overflow-y:auto;
+    border-top:1px solid var(--card-edge);
+  }
+  .log-inner{ padding:14px 22px; display:flex; flex-direction:column; gap:8px; }
+  .turn{
+    font-size:13px;
+    line-height:1.5;
+    padding:8px 12px;
+    border-radius:12px;
+    max-width:85%;
+    white-space:pre-wrap;
+  }
+  .turn.user{
+    align-self:flex-end;
+    background:rgba(34,211,164,.12);
+    color:var(--ink);
+    border:1px solid rgba(34,211,164,.18);
+  }
+  .turn.assistant{
+    align-self:flex-start;
+    background:rgba(255,255,255,.04);
+    color:var(--ink-muted);
+    border:1px solid var(--card-edge);
+  }
+
+  /* ---------- controls ---------- */
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    padding:20px 0 34px;
+  }
+  .ctrl-btn{
+    width:52px; height:52px;
+    border-radius:50%;
+    border:1px solid var(--card-edge);
+    background:rgba(255,255,255,.03);
+    color:var(--ink-muted);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:border-color .2s, color .2s, background .2s;
+  }
+  .ctrl-btn:hover{ border-color:rgba(255,255,255,.2); color:var(--ink); }
+  .ctrl-btn.danger:hover{ color:var(--danger); border-color:rgba(255,107,107,.4); }
+
+  .mic-btn{
+    width:68px; height:68px;
+    border-radius:50%;
+    border:1px solid rgba(34,211,164,.35);
+    background:radial-gradient(circle at 35% 30%, rgba(34,211,164,.35), rgba(11,16,14,.9));
+    color:var(--orb-core);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    position:relative;
+    transition:box-shadow .3s ease, transform .15s ease;
+    box-shadow:0 0 0 0 rgba(34,211,164,.4);
+  }
+  .mic-btn:active{ transform:scale(.96); }
+  body[data-state="listening"] .mic-btn,
+  body[data-state="speaking"] .mic-btn{
+    box-shadow:0 0 0 8px rgba(34,211,164,.08), 0 0 24px rgba(34,211,164,.35);
+  }
+  body[data-active="true"] .mic-btn{
+    border-color:var(--ring);
+  }
+
+  #status-eyebrow{
+    text-align:center;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-top:2px;
+  }
+
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:3px; }
+</style>
+</head>
+<body data-state="idle" data-active="false">
+
+  <div class="frame">
+
+    <div class="topbar">
+      <button class="side-btn" id="clearBtn" title="Clear transcript" aria-label="Clear transcript">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+      </button>
+      <h1>Sarvam Voice</h1>
+      <button class="side-btn" id="logToggle" title="Toggle transcript" aria-label="Toggle transcript">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
+    </div>
+
+    <div class="status-wrap">
+      <div class="status-line" id="statusLine">Tap the mic to start</div>
+      <div id="status-eyebrow">idle</div>
+    </div>
+
+    <div class="orb-stage">
+      <div class="orb-glow"></div>
+      <svg class="orb-svg" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="orbGradient" cx="38%" cy="32%" r="75%">
+            <stop offset="0%" stop-color="var(--orb-core)"/>
+            <stop offset="35%" stop-color="var(--orb-mid)"/>
+            <stop offset="100%" stop-color="var(--orb-deep)"/>
+          </radialGradient>
+          <filter id="orbTurbulence" x="-50%" y="-50%" width="200%" height="200%">
+            <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="noise">
+              <animate attributeName="baseFrequency" values="0.010 0.016;0.020 0.026;0.010 0.016" dur="14s" repeatCount="indefinite"/>
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+        </defs>
+        <g class="orb-core-anim">
+          <circle cx="105" cy="105" r="95" fill="url(#orbGradient)" filter="url(#orbTurbulence)"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="transcript-area">
+      <div class="subtitle" id="subtitle">Warm up your voice — I can hear you the moment you start.</div>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+      <div class="log-inner" id="log"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="logToggle2" title="Transcript" aria-label="Show transcript">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6l9 6 9-6M4 5h16v14H4z"/></svg>
+      </button>
+      <button class="mic-btn" id="toggle" title="Start talking" aria-label="Start talking">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/>
+        </svg>
+      </button>
+      <button class="ctrl-btn danger" id="endBtn" title="End session" aria-label="End session">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+<script>
+const MIC_SAMPLE_RATE = 16000;
+const TTS_SAMPLE_RATE = 22050;
+
+let ws, micContext, playContext, micStream;
+let playCursor = 0;          // when the next audio chunk should start
+let sources = [];            // scheduled chunks, so a barge-in can stop them
+let assistantTurn = null;    // <div> collecting the streaming reply
+
+const statusLine = document.getElementById("statusLine");
+const eyebrow = document.getElementById("status-eyebrow");
+const subtitle = document.getElementById("subtitle");
+const log = document.getElementById("log");
+const logPanel = document.getElementById("logPanel");
+const toggle = document.getElementById("toggle");
+
+function setState(state, headline, eyebrowText){
+  document.body.dataset.state = state;
+  if (headline !== undefined) statusLine.textContent = headline;
+  eyebrow.textContent = eyebrowText || state;
+}
+
+function setSubtitle(text, role){
+  subtitle.textContent = text;
+  subtitle.className = "subtitle" + (role === "user" ? " user" : "");
+}
+
+function addTurn(role, text) {
+  const div = document.createElement("div");
+  div.className = `turn ${role}`;
+  div.textContent = text;
+  log.append(div);
+  logPanel.scrollTop = logPanel.scrollHeight;
+  return div;
+}
+
+function playChunk(base64Pcm) {
+  const bytes = Uint8Array.from(atob(base64Pcm), (c) => c.charCodeAt(0));
+  const pcm = new Int16Array(bytes.buffer);
+  const buffer = playContext.createBuffer(1, pcm.length, TTS_SAMPLE_RATE);
+  const channel = buffer.getChannelData(0);
+  for (let i = 0; i < pcm.length; i++) channel[i] = pcm[i] / 32768;
+
+  const source = playContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(playContext.destination);
+  playCursor = Math.max(playCursor, playContext.currentTime);
+  source.start(playCursor);
+  playCursor += buffer.duration;
+  sources.push(source);
+  setState("speaking", "Speaking…");
+  source.onended = () => {
+    sources = sources.filter((s) => s !== source);
+    if (sources.length === 0 && document.body.dataset.active === "true") {
+      setState("listening", "Psst… speak up, I'm listening");
+    }
+  };
+}
+
+function stopPlayback() {
+  sources.forEach((s) => s.stop());
+  sources = [];
+  playCursor = 0;
+}
+
+async function start() {
+  micStream = await navigator.mediaDevices.getUserMedia({
+    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+  });
+
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.type === "user") {
+      addTurn("user", message.text);
+      setSubtitle(message.text, "user");
+      assistantTurn = null;
+      setState("thinking", "Thinking…");
+    } else if (message.type === "assistant_delta") {
+      if (!assistantTurn) assistantTurn = addTurn("assistant", "");
+      assistantTurn.textContent += message.text;
+      setSubtitle(assistantTurn.textContent, "assistant");
+    } else if (message.type === "audio") {
+      playChunk(message.audio);
+    } else if (message.type === "interrupt") {
+      stopPlayback();
+      assistantTurn = null;
+      setState("listening", "Psst… speak up, I'm listening");
+    } else if (message.type === "error") {
+      setState(document.body.dataset.state, message.text, "error");
+    }
+  };
+  ws.onclose = () => stop();
+
+  micContext = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+  playContext = new AudioContext({ sampleRate: TTS_SAMPLE_RATE });
+
+  // ponytail: ScriptProcessorNode is deprecated but needs no worklet file.
+  // Move to an AudioWorklet if the main thread ever stutters.
+  const source = micContext.createMediaStreamSource(micStream);
+  const processor = micContext.createScriptProcessor(2048, 1, 1);
+  processor.onaudioprocess = (event) => {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    const floats = event.inputBuffer.getChannelData(0);
+    const pcm = new Int16Array(floats.length);
+    for (let i = 0; i < floats.length; i++) {
+      pcm[i] = Math.max(-1, Math.min(1, floats[i])) * 32767;
+    }
+    ws.send(pcm.buffer);
+  };
+  source.connect(processor);
+  processor.connect(micContext.destination);
+
+  document.body.dataset.active = "true";
+  setState("listening", "Psst… speak up, I'm listening");
+  setSubtitle("Go ahead, I'm all ears.");
+  toggle.title = "Stop talking";
+}
+
+function stop() {
+  stopPlayback();
+  micStream?.getTracks().forEach((t) => t.stop());
+  micContext?.close();
+  playContext?.close();
+  if (ws?.readyState === WebSocket.OPEN) ws.close();
+  document.body.dataset.active = "false";
+  setState("idle", "Tap the mic to start");
+  setSubtitle("Warm up your voice — I can hear you the moment you start.");
+  toggle.title = "Start talking";
+}
+
+toggle.onclick = () => (document.body.dataset.active === "true" ? stop() : start());
+
+document.getElementById("endBtn").onclick = () => stop();
+
+document.getElementById("clearBtn").onclick = () => {
+  log.innerHTML = "";
+};
+
+function toggleLog() {
+  logPanel.classList.toggle("open");
+}
+document.getElementById("logToggle").onclick = toggleLog;
+document.getElementById("logToggle2").onclick = toggleLog;
+</script>
+</body>
+</html>
