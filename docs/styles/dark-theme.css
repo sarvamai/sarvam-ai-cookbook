@@ -1,0 +1,220 @@
+/* Dark Theme Code Block Styling for Sarvam AI Cookbook
+ * 
+ * Fixes Issue #47: Code block text invisible in dark theme
+ * Provides proper contrast and readability for code blocks in dark mode
+ */
+
+/* ============================================================================
+   Dark Theme: Code Blocks & Pre-formatted Text
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* Base code block styling */
+    code,
+    pre,
+    .highlight,
+    .highlight-block {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        font-family: 'Courier New', 'Monaco', monospace !important;
+    }
+
+    /* Pre-formatted text blocks */
+    pre {
+        border: 1px solid #404040 !important;
+        padding: 12px 16px !important;
+        border-radius: 4px !important;
+        overflow-x: auto !important;
+        line-height: 1.5 !important;
+    }
+
+    pre code {
+        color: #d4d4d4 !important;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    /* Inline code */
+    code:not(pre code) {
+        background-color: #2d2d2d !important;
+        color: #ce9178 !important;
+        padding: 2px 6px !important;
+        border-radius: 3px !important;
+        font-size: 0.9em !important;
+    }
+
+    /* ========================================================================
+       Syntax Highlighting Colors (Atom One Dark theme)
+       ======================================================================== */
+
+    /* Strings */
+    .hljs-string,
+    .hljs-attr {
+        color: #ce9178 !important;
+    }
+
+    /* Numbers */
+    .hljs-number,
+    .hljs-literal {
+        color: #b5cea8 !important;
+    }
+
+    /* Keywords & literals */
+    .hljs-literal,
+    .hljs-keyword,
+    .hljs-type {
+        color: #569cd6 !important;
+    }
+
+    /* Attributes & property names */
+    .hljs-attr,
+    .hljs-property {
+        color: #9cdcfe !important;
+    }
+
+    /* Function & class names */
+    .hljs-title,
+    .hljs-class {
+        color: #dcdcaa !important;
+    }
+
+    /* Built-in functions */
+    .hljs-built_in,
+    .hljs-function {
+        color: #4ec9b0 !important;
+    }
+
+    /* Comments */
+    .hljs-comment {
+        color: #6a9955 !important;
+    }
+
+    /* Tags (for HTML/XML) */
+    .hljs-tag,
+    .hljs-name {
+        color: #569cd6 !important;
+    }
+
+    /* Operators */
+    .hljs-operator {
+        color: #d4d4d4 !important;
+    }
+
+    /* ========================================================================
+       Platform-Specific Styles
+       ======================================================================== */
+
+    /* Jupyter Notebook */
+    .highlight pre {
+        background-color: #272822 !important;
+        color: #f8f8f2 !important;
+    }
+
+    .output_text pre,
+    .output_html pre {
+        background-color: #1e1e1e !important;
+        color: #cccccc !important;
+        border: 1px solid #404040 !important;
+    }
+
+    .cell-output-stderr pre {
+        background-color: #3d1f1f !important;
+        color: #ff6b6b !important;
+    }
+
+    /* Streamlit */
+    .stCode {
+        background-color: #1e1e1e !important;
+        border: 1px solid #404040 !important;
+    }
+
+    .stCode code {
+        color: #d4d4d4 !important;
+    }
+
+    /* GitHub Markdown */
+    .markdown pre,
+    .markdown code {
+        background-color: #1e1e1e !important;
+        color: #d4d4d4 !important;
+        border: 1px solid #404040 !important;
+    }
+
+    /* Documentation sites using highlight.js */
+    .hljs {
+        background: #1e1e1e !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* VSCode-like syntax highlighting */
+    .hljs-dark {
+        background: #1e1e1e !important;
+        color: #e0e0e0 !important;
+    }
+
+    .hljs-dark .hljs-string { color: #ce9178; }
+    .hljs-dark .hljs-number { color: #b5cea8; }
+    .hljs-dark .hljs-literal { color: #569cd6; }
+    .hljs-dark .hljs-attr { color: #9cdcfe; }
+    .hljs-dark .hljs-title { color: #dcdcaa; }
+    .hljs-dark .hljs-built_in { color: #4ec9b0; }
+    .hljs-dark .hljs-keyword { color: #569cd6; }
+    .hljs-dark .hljs-comment { color: #6a9955; }
+}
+
+/* ============================================================================
+   Light Theme (optional, for completeness)
+   ============================================================================ */
+
+@media (prefers-color-scheme: light) {
+    code,
+    pre,
+    .highlight {
+        background-color: #f5f5f5 !important;
+        color: #333 !important;
+    }
+
+    pre {
+        border: 1px solid #e0e0e0 !important;
+        padding: 12px 16px !important;
+        border-radius: 4px !important;
+    }
+
+    pre code {
+        color: #333 !important;
+    }
+
+    /* Light theme syntax highlighting */
+    .hljs-string { color: #d73a49; }
+    .hljs-number { color: #005cc5; }
+    .hljs-literal { color: #005cc5; }
+    .hljs-attr { color: #6f42c1; }
+    .hljs-title { color: #6f42c1; }
+    .hljs-comment { color: #6a737d; }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+/* High contrast for accessibility */
+@media (prefers-contrast: more) {
+    pre,
+    .highlight {
+        border-width: 2px !important;
+        font-weight: 500 !important;
+    }
+
+    code {
+        font-weight: 600 !important;
+    }
+}
+
+/* Reduced motion for animations */
+@media (prefers-reduced-motion: reduce) {
+    pre,
+    code {
+        transition: none !important;
+    }
+}
