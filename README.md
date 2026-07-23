@@ -29,6 +29,7 @@ It includes:
 | Showcase (Live on Vercel) | `examples/sarvam-showcase` | Next.js 16, React 19, TypeScript | `npm run dev` |
 | Podcast Generator | `examples/sarvam-podcast-generator` | Next.js 16, Inngest, Mistral, Sarvam APIs | `npm run dev` |
 | Birthday Song Generator | `examples/Birthday_Song_Generator/backend` | FastAPI, Jinja, Sarvam Chat API | `uvicorn main:app --reload` |
+| VAD Interview Challenge | `examples/sarvam-vad-challenge` | Denoiser + WebRTC GMM VAD (no external APIs) | `make verify-vad-challenge` |
 
 Additional hands-on examples are available under [`examples/`](./examples).
 

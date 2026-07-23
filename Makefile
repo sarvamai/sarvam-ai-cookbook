@@ -1,4 +1,4 @@
-.PHONY: help install format format-check lint test test-verbose test-coverage test-integration test-unit compile check check-all mypy-check clean verify-setup verify-showcase verify-podcast verify-web-showcase verify-web-podcast verify-all
+.PHONY: help install format format-check lint test test-verbose test-coverage test-integration test-unit compile check check-all mypy-check clean verify-setup verify-showcase verify-podcast verify-web-showcase verify-web-podcast verify-all fetch-vad-samples verify-vad-challenge
 
 VENV ?= .venv
 PYTHON ?= python3
@@ -26,6 +26,8 @@ help:
 	@echo "  make verify-web-showcase  - Lint and build showcase web app"
 	@echo "  make verify-web-podcast   - Lint and build podcast web app"
 	@echo "  make verify-all           - Full local release verification"
+	@echo "  make fetch-vad-samples    - Download 50× 16kHz WAV clips for VAD challenge"
+	@echo "  make verify-vad-challenge - Smoke-test Denoiser + WebRTC VAD pipeline"
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -93,3 +95,12 @@ verify-web-podcast:
 	cd examples/sarvam-podcast-generator && npm run lint && npm run build
 
 verify-all: check verify-showcase verify-podcast verify-web-showcase verify-web-podcast
+
+fetch-vad-samples:
+	@echo "[*] Fetching 16 kHz mono PCM samples for VAD challenge..."
+	$(VENV_PYTHON) examples/sarvam-vad-challenge/fetch_samples.py
+
+verify-vad-challenge:
+	@echo "[*] Testing VAD Interview Challenge Engine..."
+	@test -f sample_data/sample_audio/sample_001.wav || (echo "Missing samples. Run: make fetch-vad-samples" && exit 1)
+	$(VENV_PYTHON) examples/sarvam-vad-challenge/main.py sample_data/sample_audio/sample_001.wav
