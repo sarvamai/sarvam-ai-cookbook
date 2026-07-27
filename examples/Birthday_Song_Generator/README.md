@@ -13,7 +13,7 @@ Built with:
 ## 🔍 What It Does
 
 1. Asks you 10 fun questions about your friend (name, hobby, fav food, quirky habits, etc.)
-2. Uses those answers to generate a **12-line personalized birthday song** using SarvamAI's `sarvam-m` model.
+2. Uses those answers to generate a **12-line personalized birthday song** using SarvamAI's `sarvam-105b` model.
 3. Displays the song in a colorful UI ready to sing, screenshot, or roast! 🥳
 
 ---

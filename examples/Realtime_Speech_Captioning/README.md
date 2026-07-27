@@ -6,8 +6,9 @@ model choice, audio format, live chunking, and reconnect handling -- and checks 
 claims empirically instead of just quoting docs.
 
 **One correction up front:** Bulbul is Sarvam's *text-to-speech* model, not speech-to-text. Speech-to-text
-is a separate model family -- Saarika for batch (upload a file, get a transcript back) and **Saaras** for
-real-time streaming over WebSocket. This recipe uses Saaras.
+is a separate model family -- **Saaras v3** is the current recommended model for both batch (upload a file,
+get a transcript back) and real-time streaming over WebSocket; **Saarika** is an older batch-only model kept
+for backward compatibility. This recipe uses Saaras for streaming.
 
 **Two Saaras streaming models, one per component:** the notebook below uses `saaras:v3` (generally
 available). The web app (see [below](#web-app-upload-a-video-get-live-captions)) uses
