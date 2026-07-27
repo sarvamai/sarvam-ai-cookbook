@@ -100,8 +100,8 @@ def example_dir_for_file(file_path: Path) -> Path | None:
     if len(parts) >= 2 and parts[0] == "examples" and parts[1] not in LEGACY_EXAMPLE_DIRS:
         candidate = Path("examples") / parts[1]
         return candidate
-    if len(parts) >= 2 and parts[0] == "notebooks":
-        return Path("notebooks")
+    if len(parts) >= 2 and parts[0] == "getting-started":
+        return Path("getting-started")
     return None
 
 
