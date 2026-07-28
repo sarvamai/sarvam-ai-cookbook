@@ -145,7 +145,7 @@ Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
 
 #### Automated PR Checks
 
-CI runs on every pull request touching `examples/`, `notebooks/`, or validation scripts. No API key is needed to run checks.
+CI runs on every pull request touching `examples/`, `getting-started/`, or validation scripts. No API key is needed to run checks.
 
 | Check | What it does |
 |-------|--------------|
