@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from sarvam_checks import (  # noqa: E402
     is_recipe_directory,
+    notebook_cell_sources,
     scan_text_for_secrets,
 )
 
@@ -50,3 +51,15 @@ class TestRecipeDetection:
         legacy = tmp_path / "examples" / "Indic Soundbox AI"
         legacy.mkdir(parents=True)
         assert is_recipe_directory(legacy) is False
+
+
+class TestNotebookCellSources:
+    def test_reads_notebook_with_utf8_bom(self, tmp_path: Path) -> None:
+        # Some editors save notebooks with a UTF-8 BOM; json.loads on plain
+        # utf-8-decoded text chokes on the leading U+FEFF, so this must not
+        # silently return [] (which would hide that notebook from every check).
+        nb_path = tmp_path / "bom.ipynb"
+        content = '{"cells": [{"cell_type": "code", "source": ["model = \\"sarvam-m\\""]}], "nbformat": 4, "nbformat_minor": 5}\n'
+        nb_path.write_bytes(b"\xef\xbb\xbf" + content.encode("utf-8"))
+        sources = notebook_cell_sources(nb_path)
+        assert sources == ['model = "sarvam-m"']

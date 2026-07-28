@@ -6,15 +6,14 @@
   "models": {
     "chat": {
       "allowed": [
-        "sarvam-30b",
         "sarvam-105b"
       ],
       "recommended": [
-        "sarvam-30b",
         "sarvam-105b"
       ],
       "deprecated": [
-        "sarvam-m"
+        "sarvam-m",
+        "sarvam-30b"
       ]
     },
     "stt": {
