@@ -1,6 +1,5 @@
 # Sarvam AI Cookbook
 
-[![PR Check](https://github.com/sarvamai/sarvam-ai-cookbook/actions/workflows/pr-check.yml/badge.svg)](https://github.com/sarvamai/sarvam-ai-cookbook/actions/workflows/pr-check.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 Example code, guides, and end-to-end projects for building with the [Sarvam AI API](https://docs.sarvam.ai): chat completions, speech to text, text to speech, translation, transliteration, language identification, and document intelligence, all with first-class support for Indian languages.
