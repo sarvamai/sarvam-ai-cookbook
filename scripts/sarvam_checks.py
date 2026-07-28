@@ -191,7 +191,7 @@ def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") 
 def notebook_cell_sources(nb_path: Path) -> list[str]:
     """Parse notebook JSON and return each cell's source text."""
     try:
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        nb = json.loads(nb_path.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
         return []
     cells = nb.get("cells", [])
