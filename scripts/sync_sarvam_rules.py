@@ -39,12 +39,9 @@ def canonical_rules() -> dict:
         "min_sarvamai_version": "0.1.24",
         "models": {
             "chat": {
-                # sarvam-30b is being deprecated (internal Sarvam roadmap call, not
-                # yet reflected on docs.sarvam.ai as of this writing) — treat it as
-                # deprecated here ahead of the public docs update.
-                "allowed": ["sarvam-105b"],
-                "recommended": ["sarvam-105b"],
-                "deprecated": ["sarvam-m", "sarvam-30b"],
+                "allowed": ["sarvam-30b", "sarvam-105b"],
+                "recommended": ["sarvam-30b", "sarvam-105b"],
+                "deprecated": ["sarvam-m"],
             },
             "stt": {
                 "allowed": ["saaras:v3"],

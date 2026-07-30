@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAllAudioFileRecords } from '@/lib/cleanup-audio-files';
 
 export async function GET() {

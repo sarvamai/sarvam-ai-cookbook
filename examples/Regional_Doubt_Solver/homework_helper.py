@@ -41,8 +41,7 @@ def get_explanation(question: str, language_code: str, grade_level: int, api_key
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": question}
         ],
-        "model": "sarvam-105b",
-        "max_tokens": 2000,
+        "model": "sarvam-m",
         "temperature": 0.7
     }
     

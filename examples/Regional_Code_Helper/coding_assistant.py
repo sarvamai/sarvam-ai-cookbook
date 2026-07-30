@@ -20,8 +20,7 @@ class CodingAssistant:
         try:
             payload = {
                 "messages": messages,
-                "model": "sarvam-105b",
-                "max_tokens": 3000,
+                "model": "sarvam-m",
                 "temperature": temperature
             }
             
