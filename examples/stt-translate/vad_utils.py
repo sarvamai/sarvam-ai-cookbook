@@ -12,6 +12,9 @@ from typing import Sequence
 
 import numpy as np
 
+# Process-local Silero cache so detect_speech_segments does not reload the hub model.
+_VAD_MODEL_CACHE: dict[tuple[bool, str], object] = {}
+
 # Silero VAD window sizes (samples) for supported rates.
 _WINDOW_BY_SR: dict[int, int] = {16000: 512, 8000: 256}
 
@@ -152,6 +155,37 @@ def filter_short_segments(
     return [(s, e) for s, e in segments if (e - s) >= min_dur]
 
 
+
+def load_silero_vad(*, onnx: bool = True, force_reload: bool = False) -> object:
+    """Load (and cache) Silero VAD. Prefer ONNX for lower CPU latency."""
+    import torch
+
+    key = (onnx, "silero_vad")
+    if not force_reload and key in _VAD_MODEL_CACHE:
+        return _VAD_MODEL_CACHE[key]
+    try:
+        model, _ = torch.hub.load(
+            repo_or_dir="snakers4/silero-vad",
+            model="silero_vad",
+            force_reload=force_reload,
+            onnx=onnx,
+        )
+    except Exception:
+        if not onnx:
+            raise
+        # Fall back to torchscript if onnxruntime is unavailable.
+        model, _ = torch.hub.load(
+            repo_or_dir="snakers4/silero-vad",
+            model="silero_vad",
+            force_reload=force_reload,
+            onnx=False,
+        )
+    if hasattr(model, "eval"):
+        model.eval()
+    _VAD_MODEL_CACHE[key] = model
+    return model
+
+
 def get_vad_probs(
     model: object,
     audio: np.ndarray,
@@ -161,17 +195,20 @@ def get_vad_probs(
     import torch
 
     window = vad_window_samples(sample_rate)
-    audio_t = torch.as_tensor(audio, dtype=torch.float32)
+    # Contiguous float32 avoids per-chunk dtype/copies inside the hub model.
+    audio_t = torch.as_tensor(np.ascontiguousarray(audio, dtype=np.float32))
+    n_frames = (len(audio_t) + window - 1) // window if len(audio_t) else 0
     if hasattr(model, "reset_states"):
         model.reset_states()
 
-    probs: list[float] = []
-    with torch.no_grad():
-        for start in range(0, len(audio_t), window):
+    probs: list[float] = [0.0] * n_frames
+    # inference_mode is cheaper than no_grad for pure forward passes.
+    with torch.inference_mode():
+        for i, start in enumerate(range(0, len(audio_t), window)):
             chunk = audio_t[start : start + window]
-            if len(chunk) < window:
-                chunk = torch.nn.functional.pad(chunk, (0, int(window - len(chunk))))
-            probs.append(float(model(chunk, sample_rate).item()))
+            if chunk.numel() < window:
+                chunk = torch.nn.functional.pad(chunk, (0, int(window - chunk.numel())))
+            probs[i] = float(model(chunk, sample_rate).item())
     return probs
 
 
@@ -195,13 +232,7 @@ def detect_speech_segments(
     import torch
 
     if model is None:
-        model, _ = torch.hub.load(
-            repo_or_dir="snakers4/silero-vad",
-            model="silero_vad",
-            force_reload=False,
-            onnx=False,
-        )
-        model.eval()
+        model = load_silero_vad(onnx=True)
 
     probs = get_vad_probs(model, audio, sample_rate)
     if smooth_window > 1:

@@ -130,3 +130,24 @@ class TestMergeAndPad:
         assert filter_short_segments(
             [(0.0, 0.1), (1.0, 2.0)], min_duration_ms=200
         ) == [(1.0, 2.0)]
+
+
+class TestGetVadProbsStub:
+    def test_get_vad_probs_with_stub(self) -> None:
+        torch = pytest.importorskip("torch")
+        import numpy as np
+        from vad_utils import get_vad_probs
+
+        class _Stub:
+            def reset_states(self) -> None:
+                return None
+
+            def __call__(self, chunk, sample_rate):  # noqa: ANN001
+                class _T:
+                    def item(self_inner) -> float:
+                        return 0.75
+                return _T()
+
+        audio = np.zeros(512 * 3, dtype=np.float32)
+        probs = get_vad_probs(_Stub(), audio, 16000)
+        assert probs == [0.75, 0.75, 0.75]
