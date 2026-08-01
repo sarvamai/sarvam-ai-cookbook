@@ -9,10 +9,12 @@ from pathlib import Path
 
 RULES_PATH = Path(__file__).resolve().parent / "sarvam_api_rules.json"
 
-# Matches model assignments in Python, TS, JSON, and notebooks.
+# Matches model assignments in Python, TS/JS, JSON, and notebooks.
+# Includes unquoted JS/TS object keys: model: "sarvam-30b"
 MODEL_VALUE_RE = re.compile(
     r"""
     ["']model["']\s*:\s*["']([^"']+)["']     # "model": "sarvam-30b"
+    |(?<![A-Za-z0-9_])model\s*:\s*["']([^"']+)["']  # model: "sarvam-30b" (TS/JS)
     |model\s*=\s*["']([^"']+)["']            # model="saaras:v3"
     """,
     re.IGNORECASE | re.VERBOSE,
@@ -93,7 +95,7 @@ def extract_models(line: str) -> list[str]:
     """Return Sarvam model strings referenced on a line of code."""
     models: list[str] = []
     for match in MODEL_VALUE_RE.finditer(line):
-        value = match.group(1) or match.group(2)
+        value = next((g for g in match.groups() if g), None)
         if value:
             models.append(value)
     return models
