@@ -38,6 +38,10 @@ backend relay so the API key never reaches the browser -- see the web app below,
 [`examples/Live_Video_Transcription`](../Live_Video_Transcription) for a two-panel (transcript +
 translation) variant of the same idea.
 
+The web app uses Sarvam's server-side `endpointing="vad"` so finals fire on real pauses. For **offline**
+subtitle cueing with local Silero VAD (threshold / hangover / merge / pad knobs), see
+[`examples/stt-translate`](../stt-translate).
+
 ## Web app: upload a video, get live captions
 
 Alongside the notebook, this recipe includes a small Flask + Socket.IO app (`app.py`) that puts
