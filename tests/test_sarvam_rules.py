@@ -29,6 +29,15 @@ class TestRulesFile:
         line = 'data = {"model": "sarvam-30b", "messages": []}'
         assert extract_models(line) == ["sarvam-30b"]
 
+    def test_extract_models_unquoted_ts_key(self) -> None:
+        # Next.js / TS object literals often omit quotes on the key.
+        assert extract_models('  model: "sarvam-30b",') == ["sarvam-30b"]
+        assert extract_models("\tmodel: 'sarvam-105b'") == ["sarvam-105b"]
+
+    def test_extract_models_ignores_unrelated_identifiers(self) -> None:
+        # Avoid matching fields like `chat_model: "..."` via bare `model:`.
+        assert extract_models('chat_model: "sarvam-30b"') == []
+
 
 class TestAllowlistValidation:
     def test_deprecated_model_is_error_in_strict_mode(self) -> None:
@@ -46,6 +55,14 @@ class TestAllowlistValidation:
             strict=True,
         )
         assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
+
+    def test_ts_object_literal_deprecated_model_is_error(self) -> None:
+        issues = scan_added_lines_for_allowlist(
+            Path("examples/new-recipe/app.ts"),
+            [(12, '  model: "sarvam-30b",')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
 
     def test_unknown_model_flagged(self) -> None:
         issues = scan_added_lines_for_allowlist(
