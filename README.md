@@ -69,6 +69,7 @@ Most notebooks and scripts are written in Python 3.9+, but the underlying API ca
 | [Government Scheme Summarizer](examples/govt_scheme_summarizer/) | Summarizes Indian government welfare schemes and translates the summary into 10 languages |
 | [Indic Soundbox AI](<examples/Indic Soundbox AI/>) | Voice agent for merchant soundboxes that reports sales insights in the merchant's language |
 | [Live Video Transcription](examples/Live_Video_Transcription/) | Real-time transcription and translation of video audio over WebSocket |
+| [Malayalam Voice Note Summarizer](examples/malayalam_voice_note_summarizer/) | Transcribes Malayalam voice notes, summarizes them into bullet points, and narrates the summary back with TTS |
 | [Multilingual Chatbot](examples/Multilingual_Chatbot/) | Chatbot with context preservation and translation fallback across English and Indian languages |
 | [Multilingual Feedback Analyzer](examples/Multilingual_Customer_Feedback_Analyzer/) | Detects language, translates, and analyzes sentiment in customer feedback |
 | [QuickStart Chatbot](examples/QuickStart_Chatbot/) | Minimal single-turn chatbot built on the Chat Completions API |
