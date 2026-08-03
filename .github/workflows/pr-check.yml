@@ -7,7 +7,7 @@ on:
     branches: [main]
     paths:
       - "examples/**"
-      - "getting-started/**"
+      - "notebooks/**"
       - "scripts/**"
       - "tests/**"
       - "requirements-dev.txt"

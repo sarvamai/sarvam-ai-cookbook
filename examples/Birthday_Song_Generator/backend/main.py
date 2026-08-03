@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import requests
 from dotenv import load_dotenv
 import os
@@ -30,16 +30,10 @@ async def read_root(request: Request):
 
 # Input model
 class UserAnswers(BaseModel):
-    answers: list[str] = Field(..., min_length=10, max_length=10)
+    answers: list[str]
 
 @app.post("/generate-song")
 async def generate_song(data: UserAnswers):
-    if not SARVAM_API_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="SARVAM_API_KEY is not configured. Set it in your environment or .env file."
-        )
-
     name = data.answers[0]
     color = data.answers[1]
     hobby = data.answers[2]
@@ -66,37 +60,24 @@ async def generate_song(data: UserAnswers):
         Embarrassing moment they secretly enjoy: {wish}
     """
 
-    try:
-        response = requests.post(
-            "https://api.sarvam.ai/v1/chat/completions",
-            headers={
-                "api-subscription-key": SARVAM_API_KEY
-            },
-            json={
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "model": "sarvam-105b",
-                "max_tokens": 4000,
-                # Keep reasoning light so the token budget goes to the song, not
-                # internal thinking (otherwise content can come back empty).
-                "reasoning_effort": "low"
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.RequestException as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Sarvam API request failed: {exc}"
-        ) from exc
+    response = requests.post(
+        "https://api.sarvam.ai/v1/chat/completions",
+        headers={
+            "api-subscription-key": SARVAM_API_KEY
+        },
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "model": "sarvam-m"
+        },
+    )
 
     result = response.json()
-    content = result.get("choices", [{}])[0].get("message", {}).get("content")
-    if not content:
-        return {"quotes": "The song came back empty — please try again."}
-
+    content = result["choices"][0]["message"]["content"]
     print(content)
+
     return {"quotes": content}

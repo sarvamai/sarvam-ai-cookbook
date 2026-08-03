@@ -55,6 +55,7 @@ export function PodcastGenerator() {
   const [processingStep, setProcessingStep] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('hi-IN');
   const [error, setError] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
 
   const handleFileUpload = async (file: File) => {
@@ -62,6 +63,7 @@ export function PodcastGenerator() {
     setError(null);
     setPodcastData(null);
     setJobStatus(null);
+    setCurrentJobId(null);
     setProcessingStep('Processing PDF with Sarvam Vision...');
 
     try {
@@ -106,6 +108,7 @@ export function PodcastGenerator() {
       }
 
       const jobResponse = await podcastResponse.json();
+      setCurrentJobId(jobResponse.jobId);
       setProcessingStep('Podcast generation queued, waiting for processing...');
 
       const finalStatus = await pollJobStatus(

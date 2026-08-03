@@ -135,7 +135,7 @@ Use current models and endpoints from [docs.sarvam.ai](https://docs.sarvam.ai):
 
 | API | Use | Do not use |
 |-----|-----|------------|
-| Chat / LLM | `sarvam-105b` | `sarvam-m`, `sarvam-30b` (legacy) |
+| Chat / LLM | `sarvam-30b` (default), `sarvam-105b` | `sarvam-m` (legacy) |
 | Speech-to-text | `saaras:v3` | `saarika:v2.5` (deprecated) |
 | Text-to-speech | `bulbul:v3` | `bulbul:v2` |
 | Language codes | BCP-47 with `-IN` suffix | e.g. `hi-IN`, `od-IN`, `or-IN` |
@@ -145,7 +145,7 @@ Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
 
 #### Automated PR Checks
 
-CI runs on every pull request touching `examples/`, `getting-started/`, or validation scripts. No API key is needed to run checks.
+CI runs on every pull request touching `examples/`, `notebooks/`, or validation scripts. No API key is needed to run checks.
 
 | Check | What it does |
 |-------|--------------|

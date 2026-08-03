@@ -21,14 +21,13 @@ from sync_sarvam_rules import canonical_rules, rules_fingerprint, sync_rules  # 
 class TestRulesFile:
     def test_rules_json_loads(self) -> None:
         rules = get_rules()
-        assert "sarvam-105b" in rules.allowed_models
+        assert "sarvam-30b" in rules.allowed_models
         assert "sarvam-m" in rules.deprecated_models
-        assert "sarvam-30b" in rules.deprecated_models
         assert "od-IN" in rules.stt_language_codes
 
     def test_extract_models(self) -> None:
-        line = 'data = {"model": "sarvam-105b", "messages": []}'
-        assert extract_models(line) == ["sarvam-105b"]
+        line = 'data = {"model": "sarvam-30b", "messages": []}'
+        assert extract_models(line) == ["sarvam-30b"]
 
     def test_extract_models_unquoted_ts_key(self) -> None:
         # Next.js / TS object literals often omit quotes on the key.
@@ -52,18 +51,10 @@ class TestAllowlistValidation:
     def test_recommended_model_passes(self) -> None:
         issues = scan_added_lines_for_allowlist(
             Path("examples/new-recipe/app.py"),
-            [(5, 'model = "sarvam-105b"')],
-            strict=True,
-        )
-        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
-
-    def test_sarvam_30b_is_deprecated(self) -> None:
-        issues = scan_added_lines_for_allowlist(
-            Path("examples/new-recipe/app.py"),
             [(5, 'model = "sarvam-30b"')],
             strict=True,
         )
-        assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
+        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
 
     def test_ts_object_literal_deprecated_model_is_error(self) -> None:
         issues = scan_added_lines_for_allowlist(
