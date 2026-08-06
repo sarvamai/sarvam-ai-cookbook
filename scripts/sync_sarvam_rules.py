@@ -47,7 +47,10 @@ def canonical_rules() -> dict:
                 "deprecated": ["sarvam-m", "sarvam-30b"],
             },
             "stt": {
-                "allowed": ["saaras:v3"],
+                # saaras:v3-realtime powers the WebSocket streaming endpoint
+                # (wss://api.sarvam.ai/speech-to-text-realtime/ws) and is currently
+                # beta-gated per docs.sarvam.ai/api-reference/beta-apis.
+                "allowed": ["saaras:v3", "saaras:v3-realtime"],
                 "recommended": ["saaras:v3"],
                 "deprecated": ["saarika:v2.5", "saarika:v2"],
             },
