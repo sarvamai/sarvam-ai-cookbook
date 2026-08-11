@@ -59,7 +59,7 @@ class TestAllowlistValidation:
     def test_ts_object_literal_deprecated_model_is_error(self) -> None:
         issues = scan_added_lines_for_allowlist(
             Path("examples/new-recipe/app.ts"),
-            [(12, '  model: "sarvam-30b",')],
+            [(12, '  model: "sarvam-m",')],
             strict=True,
         )
         assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
