@@ -100,8 +100,8 @@ def example_dir_for_file(file_path: Path) -> Path | None:
     if len(parts) >= 2 and parts[0] == "examples" and parts[1] not in LEGACY_EXAMPLE_DIRS:
         candidate = Path("examples") / parts[1]
         return candidate
-    if len(parts) >= 2 and parts[0] == "getting-started":
-        return Path("getting-started")
+    if len(parts) >= 2 and parts[0] == "notebooks":
+        return Path("notebooks")
     return None
 
 
@@ -191,7 +191,7 @@ def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") 
 def notebook_cell_sources(nb_path: Path) -> list[str]:
     """Parse notebook JSON and return each cell's source text."""
     try:
-        nb = json.loads(nb_path.read_text(encoding="utf-8-sig"))
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
         return []
     cells = nb.get("cells", [])

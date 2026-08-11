@@ -1,19 +1,20 @@
 {
   "schema_version": 1,
-  "synced_at": "2026-07-27T07:01:30Z",
+  "synced_at": "2026-07-14T08:46:18Z",
   "docs_url": "https://docs.sarvam.ai",
   "min_sarvamai_version": "0.1.24",
   "models": {
     "chat": {
       "allowed": [
+        "sarvam-30b",
         "sarvam-105b"
       ],
       "recommended": [
+        "sarvam-30b",
         "sarvam-105b"
       ],
       "deprecated": [
-        "sarvam-m",
-        "sarvam-30b"
+        "sarvam-m"
       ]
     },
     "stt": {

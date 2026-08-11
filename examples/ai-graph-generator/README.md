@@ -1,22 +1,21 @@
 ## AI Graph Generator
-An intelligent graph and chart generator that transforms natural language prompts into visual representations using Python and Matplotlib, powered by Sarvam AI. The AI-generated plotting code is executed locally to render the chart.
+An intelligent graph and chart generator that transforms natural language prompts into visual representations using Python and Matplotlib, powered by Sarvam AI. This tool can be run locally or within a secure E2B sandbox environment.
 
 ### ✨ Features
-- Intelligent Conversion: Converts natural-language prompts into detailed visual charts.
-- 🌐 Multilingual: Prompt in English **or an Indian language** (Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Odia). When you prompt in an Indic language, the chart's title and labels are rendered **in that language and script**.
-- Diverse Chart Types: Supports the generation of bar, line, pie, scatter, stacked-bar and area charts.
+- Intelligent Conversion: Converts simple English prompts into detailed visual charts.
+- Diverse Chart Types: Supports the generation of bar, line, pie, and scatter plots.
 - AI-Powered Understanding: Leverages the Sarvam AI API to accurately interpret user intent.
 - Flexible Data Handling: Includes capabilities for random and sample data generation.
-
-> **Note on fonts:** Rendering Indic-language labels needs a font that supports the script. Most systems already have one (e.g. **Nirmala UI** on Windows). On Linux/macOS install the matching **Noto Sans** font (e.g. `Noto Sans Devanagari`) if labels appear as boxes; the app auto-detects an available font and falls back to English labels if none is found.
+- Secure Cloud Execution: Fully compatible with E2B Sandboxes for secure, cloud-based operations.
 
 ### 🚀 Getting Started
 
 **Prerequisites**
 Before you begin, ensure you have:
 
-- Python 3.9 or newer installed.
+- Python 3.7 or newer installed.
 - A valid Sarvam AI API key.
+- A valid E2B APi KEY 
 
 **Installation**
 
@@ -30,7 +29,7 @@ pip install -r requirements.txt
 
 ```
 cp .env.example .env
-Open .env and add your SARVAM_API_KEY.
+Open .env and add your SARVAM_API_KEY and E2B_API_KEY.
 ```
 
 **Run the script:**

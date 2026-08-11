@@ -5,7 +5,7 @@ Usage:
     python scripts/validate_pr.py --base-ref main --strict
     python scripts/validate_pr.py --base-ref main --json
 
-Runs on changed files under examples/ and getting-started/:
+Runs on changed files under examples/ and notebooks/:
   - Secret / API key leak detection (blocking)
   - Client-side API key references (blocking)
 
@@ -29,7 +29,7 @@ from sarvam_checks import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCAN_PREFIXES = ("examples/", "getting-started/")
+SCAN_PREFIXES = ("examples/", "notebooks/")
 
 
 def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
