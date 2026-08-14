@@ -1,0 +1,8 @@
+streamlit
+llama-index-core
+llama-index-embeddings-fastembed
+fastembed
+pypdf
+requests
+python-dotenv
+pydantic
