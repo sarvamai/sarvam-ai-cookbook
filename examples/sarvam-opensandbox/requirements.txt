@@ -1,0 +1,3 @@
+openai>=1.40.0
+opensandbox>=0.1.9
+opensandbox-code-interpreter>=0.1.2
