@@ -55,13 +55,16 @@ _MIN_PILLOW_VERSION = Version("12.1.1")
 
 # Matches hardcoded keys of the form:
 #   SARVAM_API_KEY = "real-value"   or   api_subscription_key="real-value"
+# The separators in api-subscription-key are optional so that the hyphenated
+# spelling of Sarvam's auth header — the form REST recipes actually write —
+# is caught too. Kept in sync with SECRET_ASSIGNMENT_RE in sarvam_checks.py.
 # Does NOT match:
-#   YOUR_SARVAM_API_KEY, your_key, <your …>, your-key (placeholder patterns)
+#   YOUR_SARVAM_API_KEY, your-sarvam-api-key, your_key, your-key, <your …>
 #   Unquoted references such as api_subscription_key=SARVAM_API_KEY
 #   os.environ.get(...) assignments
 _SECRET_RE = re.compile(
-    r"(?:SARVAM_API_KEY|api_subscription_key)\s*=\s*"
-    r"""[\"'](?!YOUR_SARVAM|your_key|<your|your-key)[^\"']{10,}[\"']""",
+    r"(?:SARVAM_API_KEY|api[_-]?subscription[_-]?key)\s*=\s*"
+    r"""[\"'](?!YOUR[_-]?SARVAM|your[_-]?key|<your)[^\"']{10,}[\"']""",
     re.IGNORECASE,
 )
 
