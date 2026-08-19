@@ -30,6 +30,14 @@ from typing import NamedTuple
 
 from packaging.version import Version
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from sarvam_checks import (  # noqa: E402
+    SECRET_ASSIGNMENT_RE,
+    cell_source as _cell_source,
+    load_notebook_cells as _load_notebook_cells,
+)
+
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
@@ -53,17 +61,10 @@ _REQUIRED_GITIGNORE_PATTERNS: list[str] = [".env", "sample_data/*", "outputs/*"]
 _MIN_SARVAMAI_VERSION = Version("0.1.24")
 _MIN_PILLOW_VERSION = Version("12.1.1")
 
-# Matches hardcoded keys of the form:
-#   SARVAM_API_KEY = "real-value"   or   api_subscription_key="real-value"
-# Does NOT match:
-#   YOUR_SARVAM_API_KEY, your_key, <your …>, your-key (placeholder patterns)
-#   Unquoted references such as api_subscription_key=SARVAM_API_KEY
-#   os.environ.get(...) assignments
-_SECRET_RE = re.compile(
-    r"(?:SARVAM_API_KEY|api_subscription_key)\s*=\s*"
-    r"""[\"'](?!YOUR_SARVAM|your_key|<your|your-key)[^\"']{10,}[\"']""",
-    re.IGNORECASE,
-)
+# Hardcoded-key detection is shared with validate_pr via sarvam_checks so the
+# two entry points cannot drift apart. See SECRET_ASSIGNMENT_RE for the
+# placeholder patterns that are deliberately not matched.
+_SECRET_RE = SECRET_ASSIGNMENT_RE
 
 # Unicode blocks that cover the overwhelming majority of emoji characters.
 # Deliberately excludes Devanagari, Tamil, and other Indic script blocks so
@@ -102,42 +103,6 @@ def _notebook_name(recipe_dir: Path) -> str:
         Expected notebook filename (basename only, not a full path).
     """
     return recipe_dir.name.replace("-", "_") + ".ipynb"
-
-
-def _load_notebook_cells(nb_path: Path) -> list[dict] | None:
-    """Parse a Jupyter notebook JSON file and return its cell list.
-
-    Uses the stdlib json module; the notebook is never executed.
-
-    Args:
-        nb_path: Path to the .ipynb file.
-
-    Returns:
-        List of cell dicts, or None if the file cannot be parsed.
-    """
-    try:
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
-        cells = nb.get("cells")
-        return cells if isinstance(cells, list) else []
-    except (json.JSONDecodeError, UnicodeDecodeError, OSError):
-        return None
-
-
-def _cell_source(cell: dict) -> str:
-    """Return the joined source text of a notebook cell.
-
-    Handles both list-of-strings and plain-string source formats.
-
-    Args:
-        cell: A Jupyter cell dict.
-
-    Returns:
-        The full source as a single string.
-    """
-    src = cell.get("source", [])
-    if isinstance(src, list):
-        return "".join(src)
-    return str(src) if src else ""
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +272,13 @@ def check_secrets(recipe_dir: Path) -> list[Issue]:
         if fp.suffix == ".ipynb":
             cells = _load_notebook_cells(fp)
             if cells is None:
+                # Never skip silently: an unreadable notebook is a notebook
+                # whose cells were not scanned for keys.
+                issues.append(Issue(
+                    "error", "secrets",
+                    f"Cannot parse notebook, so it was not scanned for API keys: {rel}",
+                    "Ensure the notebook is valid JSON (open it in Jupyter to check).",
+                ))
                 continue
             for cell in cells:
                 if _SECRET_RE.search(_cell_source(cell)):
