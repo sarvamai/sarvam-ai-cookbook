@@ -1,0 +1,60 @@
+name: PR Check Comment
+
+# Posts the report produced by pr-check.yml back onto the pull request.
+#
+# pr-check.yml runs on `pull_request`, which for a fork PR gets a read-only
+# GITHUB_TOKEN and therefore cannot comment. `workflow_run` runs in the base
+# repository's context with a writable token, and — unlike pull_request_target
+# — never checks out or executes the contributor's code. This job only ever
+# handles the rendered markdown artifact.
+
+on:
+  workflow_run:
+    workflows: ["PR Check"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    name: Post validation report
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download validation report
+        id: download
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: validation-report
+          path: report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      # The run can fail before validation produces a report — a failing unit
+      # test, for instance. There is nothing to post in that case.
+      - name: Check report is present
+        id: check
+        run: |
+          if [ -s report/pr-comment.md ] && [ -s report/pr-number.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No validation report artifact; nothing to comment."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post report as a PR comment
+        if: steps.check.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          pr_number=$(tr -cd '0-9' < report/pr-number.txt)
+          if [ -z "$pr_number" ]; then
+            echo "::error::pr-number.txt did not contain a PR number."
+            exit 1
+          fi
+          gh pr comment "$pr_number" --repo "$REPO" --body-file report/pr-comment.md

@@ -1,6 +1,12 @@
 name: PR Check
 
-# Validates contributor PRs and posts actionable comments on failure.
+# Validates contributor PRs and emits an actionable report.
+#
+# This workflow runs untrusted PR code paths, so it holds a read-only token and
+# never comments itself: on a `pull_request` event from a fork GitHub issues a
+# read-only GITHUB_TOKEN no matter what `permissions:` asks for. The report is
+# written to the run summary and uploaded as an artifact; the companion
+# pr-comment.yml workflow picks it up and posts it.
 
 on:
   pull_request:
@@ -12,11 +18,11 @@ on:
       - "tests/**"
       - "requirements-dev.txt"
       - ".github/workflows/pr-check.yml"
+      - ".github/workflows/pr-comment.yml"
       - "scripts/sarvam_api_rules.json"
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   validate:
@@ -48,16 +54,30 @@ jobs:
           python scripts/ci_validate.py --base-ref "$BASE_REF" --output validation-results.json
         continue-on-error: true
 
-      - name: Post validation summary on failure
+      - name: Render validation report
         if: steps.validate.outcome == 'failure'
         env:
-          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          python scripts/pr_comment.py \
-            --input validation-results.json \
-            --output pr-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --body-file pr-comment.md
+          python scripts/pr_comment.py --input validation-results.json --output pr-comment.md
+          # Carried in the artifact because github.event.workflow_run.pull_requests
+          # is empty for fork PRs.
+          echo "$PR_NUMBER" > pr-number.txt
+
+      - name: Add report to run summary
+        if: steps.validate.outcome == 'failure'
+        run: cat pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report for the comment workflow
+        if: steps.validate.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: |
+            pr-comment.md
+            pr-number.txt
+            validation-results.json
+          if-no-files-found: error
 
       - name: Fail if validation failed
         if: steps.validate.outcome == 'failure'
