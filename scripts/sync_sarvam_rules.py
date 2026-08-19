@@ -119,8 +119,15 @@ def sync_rules(*, verbose: bool = False) -> tuple[dict, bool]:
     new_fp = rules_fingerprint(rules)
     changed = True
     if RULES_PATH.exists():
-        existing = json.loads(RULES_PATH.read_text(encoding="utf-8"))
-        changed = rules_fingerprint(existing) != new_fp
+        try:
+            existing = json.loads(RULES_PATH.read_text(encoding="utf-8"))
+            changed = rules_fingerprint(existing) != new_fp
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+            # An unreadable file needs rewriting, which is what changed=True
+            # means. Raising here would instead crash the one code path able to
+            # repair it, now that the write is gated on this flag.
+            if verbose:
+                print(f"{RULES_PATH} is unreadable ({exc}); treating as out of date.")
 
     return rules, changed
 
@@ -148,11 +155,16 @@ def main() -> int:
         print("sarvam_api_rules.json is up to date.")
         return 0
 
-    RULES_PATH.write_text(render_rules(rules), encoding="utf-8")
-    if args.verbose or changed:
-        print(f"Wrote {RULES_PATH} (changed={changed})")
-    else:
+    # Only write when the rules themselves differ. render_rules() stamps a
+    # fresh synced_at on every call, so writing unconditionally left the working
+    # tree dirty on every run and made the weekly workflow open a pull request
+    # containing nothing but a new timestamp.
+    if not changed:
         print(f"{RULES_PATH} already current.")
+        return 0
+
+    RULES_PATH.write_text(render_rules(rules), encoding="utf-8")
+    print(f"Wrote {RULES_PATH}")
     return 0
 
 
