@@ -27,6 +27,7 @@ import re
 import sys
 from pathlib import Path
 from typing import NamedTuple
+from urllib.parse import unquote
 
 from packaging.version import Version
 
@@ -77,6 +78,14 @@ _EMOJI_RE = re.compile(
     r"]",
     re.UNICODE,
 )
+
+# Inline markdown link and image targets: the (...) half of [text](target).
+_MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(\s*(<[^>]*>|[^()\s]*)")
+
+# Targets that are not paths on disk and so are out of scope for this check.
+_EXTERNAL_LINK_RE = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//)", re.IGNORECASE)
+
+_LINK_SCAN_SKIP_DIRS = frozenset({"node_modules", "__pycache__", ".next", "dist", "build"})
 
 # File suffixes treated as binary / generated; skipped during secret scanning.
 _BINARY_SUFFIXES: frozenset[str] = frozenset(
@@ -483,6 +492,52 @@ def check_emoji(recipe_dir: Path) -> list[Issue]:
     return issues
 
 
+def check_markdown_links(recipe_dir: Path) -> list[Issue]:
+    """Verify that relative links and images in markdown files resolve.
+
+    Only local targets are checked; external URLs are left alone so the check
+    stays offline and deterministic. A broken image renders as nothing on
+    GitHub, which is easy to introduce (a rename, a copy-pasted path) and
+    invisible until someone opens the page.
+
+    Args:
+        recipe_dir: Path to the example directory being checked.
+
+    Returns:
+        One error Issue per unresolvable target.
+    """
+    issues: list[Issue] = []
+
+    for md in sorted(recipe_dir.rglob("*.md")):
+        if any(part in _LINK_SCAN_SKIP_DIRS for part in md.parts):
+            continue
+        try:
+            text = md.read_text(encoding="utf-8-sig")
+        except (UnicodeDecodeError, OSError):
+            continue
+
+        for raw_target in _MARKDOWN_LINK_RE.findall(text):
+            target = raw_target.strip().strip("<>")
+            # Strip the fragment/query, then undo %20 and friends so that a
+            # path written for a URL still resolves on disk.
+            target = unquote(target.split("#", 1)[0].split("?", 1)[0]).strip()
+            if not target or _EXTERNAL_LINK_RE.match(target):
+                continue
+
+            resolved = (recipe_dir if target.startswith("/") else md.parent) / target.lstrip("/")
+            if resolved.exists():
+                continue
+
+            issues.append(Issue(
+                "error",
+                "markdown-links",
+                f"Broken link in {md.relative_to(recipe_dir)}: {target}",
+                "Point it at a file that exists, or remove the link.",
+            ))
+
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
@@ -508,6 +563,7 @@ def validate_recipe(recipe_dir: Path) -> list[Issue]:
         + check_secrets(recipe_dir)
         + check_notebook_structure(recipe_dir)
         + check_emoji(recipe_dir)
+        + check_markdown_links(recipe_dir)
     )
 
 
