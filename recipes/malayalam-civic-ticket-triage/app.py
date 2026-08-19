@@ -1,4 +1,4 @@
-﻿"""
+"""
 app.py - Gradio web UI for the Malayalam Civic Ticket Triage recipe.
 
 Run:
@@ -79,20 +79,20 @@ def _format_summary(ticket) -> str:
     r  = ticket.routing
     ai = ticket.action_items
     lines = [
-        f"[Ticket] **Ticket:** {ticket.ticket_id}",
-        f"[Category] **Category:** {a.category}",
-        f"[Location] **Location:** {a.location}",
-        f"[Priority] **Priority:** {a.priority}",
-        f"[Summary] **Summary:** {a.summary}",
+        f"**Ticket:** {ticket.ticket_id}",
+        f"**Category:** {a.category}",
+        f"**Location:** {a.location}",
+        f"**Priority:** {a.priority}",
+        f"**Summary:** {a.summary}",
         "",
-        f"[Department] **Department:** {r.department_name} ({r.department_code})",
-        f"[Email] **Email:** {r.department_email}",
-        f"⏰ **SLA:** {r.sla_days} days -> deadline {r.sla_deadline}",
+        f"**Department:** {r.department_name} ({r.department_code})",
+        f"**Email:** {r.department_email}",
+        f"**SLA:** {r.sla_days} days, deadline {r.sla_deadline}",
         "",
-        "[OK] **Immediate Actions:**",
-        *[f"  • {step}" for step in ai.immediate_steps],
-        f"[Search] **Field Visit Required:** {'Yes' if ai.field_visit_required else 'No'}",
-        f"[Date] **Est. Resolution:** {ai.estimated_resolution_days} days",
+        "**Immediate Actions:**",
+        *[f"  - {step}" for step in ai.immediate_steps],
+        f"**Field Visit Required:** {'Yes' if ai.field_visit_required else 'No'}",
+        f"**Est. Resolution:** {ai.estimated_resolution_days} days",
     ]
     return "\n".join(lines)
 
@@ -100,18 +100,18 @@ def _format_summary(ticket) -> str:
 with gr.Blocks(title="Malayalam Civic Ticket Triage", theme=gr.themes.Soft()) as demo:
     gr.Markdown(
         """
-        # [Building]️ Malayalam Civic Ticket Triage
+        # Malayalam Civic Ticket Triage
         **Powered by Sarvam AI** | Voice -> STT -> Structured Grievance -> Department Routing -> Malayalam Acknowledgement
         """
     )
 
-    with gr.Tab("[Mic]️ Voice Input"):
+    with gr.Tab("Voice Input"):
         audio_input = gr.Audio(
             sources=["microphone", "upload"],
             type="filepath",
             label="Record or upload Malayalam grievance audio",
         )
-        audio_btn = gr.Button("[Search] Triage Grievance", variant="primary")
+        audio_btn = gr.Button("Triage Grievance", variant="primary")
         with gr.Row():
             audio_summary = gr.Markdown(label="Triage Summary")
         audio_ack = gr.Textbox(label="Malayalam Acknowledgement", lines=4)
@@ -122,13 +122,13 @@ with gr.Blocks(title="Malayalam Civic Ticket Triage", theme=gr.themes.Soft()) as
             outputs=[audio_summary, audio_ack, audio_json],
         )
 
-    with gr.Tab("⌨️ Text Input"):
+    with gr.Tab("Text Input"):
         text_input = gr.Textbox(
             label="Type your grievance in Malayalam",
             placeholder="ഇവിടെ നിങ്ങളുടെ പരാതി ടൈപ്പ് ചെയ്യുക...",
             lines=4,
         )
-        text_btn = gr.Button("[Search] Triage Grievance", variant="primary")
+        text_btn = gr.Button("Triage Grievance", variant="primary")
         with gr.Row():
             text_summary = gr.Markdown(label="Triage Summary")
         text_ack = gr.Textbox(label="Malayalam Acknowledgement", lines=4)
