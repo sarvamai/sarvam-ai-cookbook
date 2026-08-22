@@ -10,7 +10,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from sarvam_checks import scan_added_lines_for_allowlist  # noqa: E402
-from sarvam_rules import (  # noqa: E402
+from sarvam_rules import (
+    extract_language_codes,
     extract_models,
     get_rules,
     load_rules,
@@ -38,6 +39,16 @@ class TestRulesFile:
     def test_extract_models_ignores_unrelated_identifiers(self) -> None:
         # Avoid matching fields like `chat_model: "..."` via bare `model:`.
         assert extract_models('chat_model: "sarvam-30b"') == []
+
+    def test_extract_language_codes_unquoted_ts_key(self) -> None:
+        # TS/JS object literals commonly omit quotes around language-code keys.
+        assert extract_language_codes('  language_code: "hi-IN",') == ["hi-IN"]
+        assert extract_language_codes("\ttarget_language_code: 'od-IN',") == ["od-IN"]
+        assert extract_language_codes('  source_language_code: "en-IN",') == ["en-IN"]
+
+    def test_extract_language_codes_ignores_unrelated_identifiers(self) -> None:
+        # Avoid matching fields that merely end with `language_code`.
+        assert extract_language_codes('preferred_language_code: "hi-IN"') == []
 
 
 class TestAllowlistValidation:
@@ -88,6 +99,15 @@ class TestAllowlistValidation:
             strict=True,
         )
         assert not any(i.check == "language-code" for i in issues)
+
+    def test_or_in_language_code_allowed(self) -> None:
+        issues = scan_added_lines_for_allowlist(
+            Path("examples/new-recipe/app.py"),
+            [(8, '"target_language_code": "or-IN"')],
+            strict=True,
+        )
+        assert not any(i.check == "language-code" for i in issues)
+
     def test_canonical_rules_have_required_keys(self) -> None:
         rules = canonical_rules()
         assert rules["schema_version"] == 1
@@ -107,6 +127,14 @@ class TestAllowlistValidation:
         loaded = json.loads(path.read_text())
         assert rules_fingerprint(loaded) == rules_fingerprint(canonical_rules())
 
+    def test_ts_object_literal_language_code_is_validated(self) -> None:
+        issues = scan_added_lines_for_allowlist(
+            Path("examples/new-recipe/app.ts"),
+            [(12, '  language_code: "zz-IN",')],
+            strict=True,
+        )
+        assert any(i.check == "language-code" for i in issues)
+
     def test_sync_detects_model_list_change(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         rules = canonical_rules()
         path = tmp_path / "sarvam_api_rules.json"
@@ -121,3 +149,5 @@ class TestAllowlistValidation:
         path.write_text(json.dumps(stale, indent=2) + "\n")
         _, needs_sync = sync_rules()
         assert needs_sync is True
+
+
