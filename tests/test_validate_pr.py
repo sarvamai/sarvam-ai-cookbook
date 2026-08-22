@@ -4,6 +4,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from sarvam_checks import (  # noqa: E402
@@ -12,6 +14,7 @@ from sarvam_checks import (  # noqa: E402
     scan_added_lines_for_deprecated_api,
     scan_text_for_secrets,
 )
+import validate_pr as vp  # noqa: E402
 
 
 class TestSecretScanning:
@@ -187,3 +190,74 @@ class TestDeprecatedApiScanning:
             strict=True,
         )
         assert any("42" in i.message for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# TestValidatePrAllowlistWiring
+# ---------------------------------------------------------------------------
+
+
+class TestValidatePrAllowlistWiring:
+    """Integration tests verifying validate_pr_with_refs wires in allowlist scanning."""
+
+    def test_deprecated_model_flagged_as_warning_default(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(5, 'model = "sarvam-m"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=False)
+        assert any(i.check == "deprecated-model" and i.severity == "warning" for i in issues)
+
+    def test_deprecated_model_flagged_as_error_in_strict(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(3, 'model = "sarvam-30b"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
+
+    def test_recommended_model_produces_no_allowlist_findings(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(5, 'model = "sarvam-105b"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
+
+    def test_binary_file_skips_allowlist_scan(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/image.png"])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(1, 'garbage')])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
+
+    def test_no_changed_files_returns_empty(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: [])
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert issues == []
