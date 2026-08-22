@@ -158,6 +158,17 @@ def check_required_files(recipe_dir: Path) -> list[Issue]:
     Returns:
         One error Issue per missing file; empty list when all present.
     """
+    issues: list[Issue] = []
+
+    # Check for spaces in directory name (moved from sarvam_checks.py)
+    if " " in recipe_dir.name:
+        issues.append(Issue(
+            "error",
+            "naming",
+            f"Directory name contains spaces: {recipe_dir.name}",
+            "Use underscores or hyphens instead of spaces for directory names.",
+        ))
+
     nb_name = _notebook_name(recipe_dir)
     required: list[Path] = [
         recipe_dir / nb_name,
@@ -168,16 +179,26 @@ def check_required_files(recipe_dir: Path) -> list[Issue]:
         recipe_dir / "sample_data" / ".gitkeep",
         recipe_dir / "outputs" / ".gitkeep",
     ]
-    return [
-        Issue(
-            "error",
-            "required-files",
-            f"Missing required file: {p.relative_to(recipe_dir)}",
-            "Create this file following the examples/TEMPLATE structure.",
-        )
-        for p in required
-        if not p.exists()
-    ]
+    
+    for p in required:
+        if not p.exists():
+            # Special case: if it's a notebook and we can't find it, check if any .ipynb exists
+            if p.suffix == ".ipynb" and not any(recipe_dir.glob("*.ipynb")):
+                issues.append(Issue(
+                    "error",
+                    "required-files",
+                    f"Missing required file: {p.relative_to(recipe_dir)}",
+                    "Create a Jupyter notebook following the examples/TEMPLATE structure.",
+                ))
+            elif p.suffix != ".ipynb":
+                issues.append(Issue(
+                    "error",
+                    "required-files",
+                    f"Missing required file: {p.relative_to(recipe_dir)}",
+                    "Create this file following the examples/TEMPLATE structure.",
+                ))
+    
+    return issues
 
 
 def check_gitignore(recipe_dir: Path) -> list[Issue]:
