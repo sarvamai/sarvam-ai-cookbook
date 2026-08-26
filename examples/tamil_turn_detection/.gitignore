@@ -1,0 +1,9 @@
+.env
+sample_data/*
+!sample_data/.gitkeep
+outputs/*
+!outputs/.gitkeep
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+agent.py
