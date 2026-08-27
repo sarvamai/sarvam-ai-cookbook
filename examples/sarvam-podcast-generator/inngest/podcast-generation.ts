@@ -348,8 +348,8 @@ async function textToSpeech(text: string, language: string, speaker: 'host' | 'g
                 'api-subscription-key': apiKey,
             },
             body: JSON.stringify({
-                inputs: [text],
-                target_language_code: language,
+                text: text,
+                language_code: language,
                 speaker: selectedVoice,
                 pace: 1.0,
                 temperature: 0.6,
