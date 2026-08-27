@@ -5,7 +5,7 @@ Usage:
     python scripts/validate_pr.py --base-ref main --strict
     python scripts/validate_pr.py --base-ref main --json
 
-Runs on changed files under examples/ and getting-started/:
+Runs on changed files under examples/, getting-started/ and integrations/:
   - Secret / API key leak detection (blocking)
   - Client-side API key references (blocking)
 
@@ -29,14 +29,19 @@ from sarvam_checks import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCAN_PREFIXES = ("examples/", "getting-started/")
+SCAN_PREFIXES = ("examples/", "getting-started/", "integrations/")
+
+
+def is_scanned_path(rel_path: str) -> bool:
+    """Return True when a repo-relative path falls inside secret-scan scope."""
+    return rel_path.startswith(SCAN_PREFIXES)
 
 
 def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     """Return repo-relative paths changed in the PR."""
     paths: list[Path] = []
     for rel in git_diff_name_only(base_ref, head_ref):
-        if rel.startswith(SCAN_PREFIXES):
+        if is_scanned_path(rel):
             paths.append(Path(rel))
     return paths
 
