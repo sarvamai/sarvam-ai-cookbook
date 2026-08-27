@@ -1,0 +1,12 @@
+model_list:
+  - model_name: sarvam-m
+    litellm_params:
+      model: openai/sarvam-m
+      api_base: https://api.sarvam.ai/v1
+      api_key: os.environ/SARVAM_API_KEY
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
