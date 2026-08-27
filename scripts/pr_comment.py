@@ -64,7 +64,20 @@ def main() -> int:
     parser.add_argument("--output", help="Write comment to file instead of stdout")
     args = parser.parse_args()
 
-    data = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    try:
+        raw = Path(args.input).read_text(encoding="utf-8")
+    except OSError as exc:
+        # Usually means the validation step died before writing its results.
+        # Say so plainly instead of ending the job on a traceback.
+        print(f"Cannot read validation results file {args.input}: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(f"Validation results file {args.input} is not valid JSON: {exc}", file=sys.stderr)
+        return 1
+
     comment = format_ci_comment(data)
     if args.output:
         Path(args.output).write_text(comment, encoding="utf-8")

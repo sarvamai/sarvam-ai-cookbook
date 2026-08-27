@@ -137,8 +137,46 @@ def should_scan_file(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
+class GitDiffError(RuntimeError):
+    """Raised when git could not produce a diff, so the changed set is unknown.
+
+    An empty list means "nothing changed" and is a valid, checked result.
+    A bad base ref or a non-repo working directory is not that — it means no
+    file was examined at all, which must never be reported as a clean scan.
+    """
+
+
+def git_diff_issue(base_ref: str, exc: GitDiffError) -> Issue:
+    """Turn a failed diff into a blocking finding.
+
+    Both entry points need this: a run that could not list the changed files
+    has checked nothing, and must say so instead of exiting 0.
+    """
+    return Issue(
+        "error",
+        "git-diff",
+        f"Could not work out which files changed, so nothing was checked — {exc}",
+        f"Check that {base_ref} exists here and that the checkout has enough "
+        "history (actions/checkout needs fetch-depth: 0).",
+    )
+
+
+def git_failure_reason(result: subprocess.CompletedProcess) -> str:
+    """Return git's own one-line reason for failing.
+
+    Only the first line: the rest of git's stderr is usage help, and these
+    messages end up in a one-line ``::error ::`` annotation and in a PR comment.
+    """
+    lines = result.stderr.strip().splitlines()
+    return lines[0] if lines else f"git exited {result.returncode}"
+
+
 def git_diff_name_only(base_ref: str, head_ref: str = "HEAD") -> list[str]:
-    """Return changed file paths between base_ref and head_ref."""
+    """Return changed file paths between base_ref and head_ref.
+
+    Raises:
+        GitDiffError: if git failed for every candidate ref pair.
+    """
     for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
             ["git", "diff", "--name-only", "--diff-filter=ACMRT", ref_pair],
@@ -148,11 +186,21 @@ def git_diff_name_only(base_ref: str, head_ref: str = "HEAD") -> list[str]:
         )
         if result.returncode == 0:
             return [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    return []
+        failure = git_failure_reason(result)
+    raise GitDiffError(
+        f"could not diff origin/{base_ref}...{head_ref} or {base_ref}...{head_ref}: {failure}"
+    )
 
 
 def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") -> list[tuple[int, str]]:
-    """Return (line_number, content) for lines added in file_path."""
+    """Return (line_number, content) for lines added in file_path.
+
+    Raises:
+        GitDiffError: if git failed for every candidate ref pair. A ref pair
+            that diffed successfully but added nothing still returns [].
+    """
+    diffed = False
+    failure = ""
     for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
             ["git", "diff", "-U0", ref_pair, "--", file_path],
@@ -161,7 +209,9 @@ def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") 
             check=False,
         )
         if result.returncode != 0:
+            failure = git_failure_reason(result)
             continue
+        diffed = True
 
         added: list[tuple[int, str]] = []
         current_line = 0
@@ -180,6 +230,11 @@ def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") 
                 current_line += 1
         if added or result.stdout:
             return added
+    if not diffed:
+        raise GitDiffError(
+            f"could not diff origin/{base_ref}...{head_ref} or "
+            f"{base_ref}...{head_ref} for {file_path}: {failure}"
+        )
     return []
 
 
