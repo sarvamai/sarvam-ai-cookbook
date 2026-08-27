@@ -31,6 +31,25 @@ class TestSecretScanning:
         issues = scan_text_for_secrets(text, "app.py")
         assert any(i.check == "secrets" for i in issues)
 
+    def test_finding_never_repeats_the_key_value(self) -> None:
+        # The finding is rendered by scripts/pr_comment.py and posted to the PR
+        # with `gh pr comment`, so anything in the message becomes public. A
+        # contributor can force-push the commit away; the comment stays.
+        fake_key = "sk_" + ("z" * 24)
+        text = f'SARVAM_API_KEY = "{fake_key}"'
+        issues = scan_text_for_secrets(text, "app.py")
+
+        assert issues, "expected the hardcoded key to be flagged"
+        for issue in issues:
+            assert fake_key not in issue.message
+            assert fake_key not in (issue.suggestion or "")
+
+    def test_finding_still_names_the_file(self) -> None:
+        # Removing the value must not remove the contributor's ability to find it.
+        fake_key = "sk_" + ("y" * 24)
+        issues = scan_text_for_secrets(f'SARVAM_API_KEY = "{fake_key}"', "src/app.py")
+        assert any("src/app.py" in i.message for i in issues)
+
 
 class TestRecipeDetection:
     def test_recipe_with_env_example_and_notebook(self, tmp_path: Path) -> None:
