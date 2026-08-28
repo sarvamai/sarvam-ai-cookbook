@@ -1,0 +1,102 @@
+{
+  "type": "object",
+  "description": "A school examination marksheet issued by an Indian state or national board.",
+  "properties": {
+    "student_name": {
+      "type": "string",
+      "description": "Full name of the candidate as printed on the marksheet."
+    },
+    "roll_number": {
+      "type": "string",
+      "description": "The candidate roll or registration number. Keep it as text so leading zeros and letters survive."
+    },
+    "school_name": {
+      "type": "string",
+      "description": "Name of the school or examination centre printed on the marksheet."
+    },
+    "board_name": {
+      "type": "string",
+      "description": "The examining board that issued the marksheet."
+    },
+    "examination_name": {
+      "type": "string",
+      "description": "The examination this marksheet reports, for example the annual class ten examination."
+    },
+    "examination_year": {
+      "type": "integer",
+      "description": "The four digit year of the examination."
+    },
+    "class_or_standard": {
+      "type": "string",
+      "description": "The class or standard the candidate sat, as printed."
+    },
+    "date_of_birth": {
+      "type": "string",
+      "description": "The candidate date of birth, exactly as printed on the marksheet."
+    },
+    "result_status": {
+      "type": "string",
+      "description": "The overall result declared at the foot of the marksheet.",
+      "enum": ["pass", "fail", "compartment", "withheld"]
+    },
+    "total_marks_obtained": {
+      "type": "number",
+      "description": "Sum of marks obtained across all subjects, from the totals row."
+    },
+    "total_marks_maximum": {
+      "type": "number",
+      "description": "Maximum marks available across all subjects, from the totals row."
+    },
+    "percentage": {
+      "type": "number",
+      "description": "Overall percentage printed on the marksheet, if the board prints one."
+    },
+    "division_or_grade": {
+      "type": "string",
+      "description": "The division or overall grade awarded, as printed."
+    },
+    "subjects": {
+      "type": "array",
+      "description": "One entry per row of the subject-wise marks table.",
+      "items": {
+        "type": "object",
+        "description": "A single subject row from the marks table.",
+        "properties": {
+          "subject_code": {
+            "type": "string",
+            "description": "The subject code printed in the first column of the row."
+          },
+          "subject_name": {
+            "type": "string",
+            "description": "The subject name printed on the row."
+          },
+          "theory_marks": {
+            "type": "number",
+            "description": "Marks obtained in the theory paper for this subject."
+          },
+          "practical_marks": {
+            "type": "number",
+            "description": "Marks obtained in the practical or internal component for this subject."
+          },
+          "total_marks": {
+            "type": "number",
+            "description": "Total marks obtained in this subject, as printed at the end of the row."
+          },
+          "maximum_marks": {
+            "type": "number",
+            "description": "Maximum marks available in this subject."
+          },
+          "grade": {
+            "type": "string",
+            "description": "The letter grade for this subject, if the board prints grades."
+          },
+          "subject_result": {
+            "type": "string",
+            "description": "Whether the candidate passed this individual subject.",
+            "enum": ["pass", "fail"]
+          }
+        }
+      }
+    }
+  }
+}

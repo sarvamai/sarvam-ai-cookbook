@@ -1,0 +1,101 @@
+{
+  "type": "object",
+  "description": "A retail pharmacy invoice or cash memo from an Indian medical store.",
+  "properties": {
+    "pharmacy_name": {
+      "type": "string",
+      "description": "Trading name of the pharmacy, printed in the letterhead."
+    },
+    "drug_licence_number": {
+      "type": "string",
+      "description": "The drug licence number printed in the letterhead or footer."
+    },
+    "gstin": {
+      "type": "string",
+      "description": "The fifteen character GST identification number of the pharmacy."
+    },
+    "invoice_number": {
+      "type": "string",
+      "description": "The invoice or bill number for this sale."
+    },
+    "invoice_date": {
+      "type": "string",
+      "description": "The date of sale, exactly as printed on the invoice."
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Name of the buyer, printed in the patient or customer block."
+    },
+    "prescribing_doctor": {
+      "type": "string",
+      "description": "Name of the prescribing doctor, where the invoice records one."
+    },
+    "payment_mode": {
+      "type": "string",
+      "description": "How the bill was settled, as printed near the total.",
+      "enum": ["cash", "card", "upi", "credit"]
+    },
+    "subtotal_amount": {
+      "type": "number",
+      "description": "Total of all line items before tax and rounding, in rupees."
+    },
+    "tax_amount": {
+      "type": "number",
+      "description": "Total GST charged on the invoice, in rupees."
+    },
+    "discount_amount": {
+      "type": "number",
+      "description": "Total discount applied to the invoice, in rupees."
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Net amount payable after tax, discount and rounding, in rupees."
+    },
+    "line_items": {
+      "type": "array",
+      "description": "One entry per row of the medicine table on the invoice.",
+      "items": {
+        "type": "object",
+        "description": "A single medicine row from the invoice table.",
+        "properties": {
+          "item_name": {
+            "type": "string",
+            "description": "The medicine name and strength exactly as printed on the row."
+          },
+          "batch_number": {
+            "type": "string",
+            "description": "The batch number printed on the row."
+          },
+          "expiry": {
+            "type": "string",
+            "description": "The expiry date printed on the row, usually as month and year."
+          },
+          "hsn_code": {
+            "type": "string",
+            "description": "The HSN code printed on the row, where the invoice carries one."
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Number of units or strips sold on this row."
+          },
+          "mrp": {
+            "type": "number",
+            "description": "Maximum retail price per unit printed on the row, in rupees."
+          },
+          "rate": {
+            "type": "number",
+            "description": "Rate actually charged per unit on this row, in rupees."
+          },
+          "gst_percent": {
+            "type": "number",
+            "description": "GST rate applied to this row, as a percentage."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount charged for this row, in rupees."
+          }
+        }
+      }
+    }
+  }
+}

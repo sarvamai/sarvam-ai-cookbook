@@ -1,0 +1,138 @@
+{
+  "type": "object",
+  "description": "A domestic electricity bill issued by an Indian state distribution company.",
+  "properties": {
+    "consumer_name": {
+      "type": "string",
+      "description": "Name of the account holder, printed near the top of the bill above the supply address."
+    },
+    "consumer_number": {
+      "type": "string",
+      "description": "The consumer or service connection number, usually a long digit string in the header block. Keep it as text so leading zeros survive."
+    },
+    "bill_number": {
+      "type": "string",
+      "description": "The bill or invoice number for this billing cycle."
+    },
+    "billing_period": {
+      "type": "string",
+      "description": "The period this bill covers, printed as a from and to date pair."
+    },
+    "bill_date": {
+      "type": "string",
+      "description": "The date the bill was issued, as printed on the document."
+    },
+    "due_date": {
+      "type": "string",
+      "description": "The last date for payment without a late fee, as printed on the document."
+    },
+    "meter_number": {
+      "type": "string",
+      "description": "The meter serial number shown in the reading section."
+    },
+    "previous_reading": {
+      "type": "number",
+      "description": "The previous meter reading in units, from the reading section."
+    },
+    "current_reading": {
+      "type": "number",
+      "description": "The current meter reading in units, from the reading section."
+    },
+    "units_consumed": {
+      "type": "number",
+      "description": "Total units billed for this period, in kWh."
+    },
+    "sanctioned_load_kw": {
+      "type": "number",
+      "description": "The sanctioned load for the connection, in kilowatts."
+    },
+    "connection_type": {
+      "type": "string",
+      "description": "The tariff category of the connection as printed on the bill.",
+      "enum": ["domestic", "commercial", "industrial", "agricultural"]
+    },
+    "payment_status": {
+      "type": "string",
+      "description": "Whether the bill shows as settled or still outstanding.",
+      "enum": ["paid", "unpaid", "partially_paid"]
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "The net amount payable by the due date, in rupees."
+    },
+    "arrears_amount": {
+      "type": "number",
+      "description": "Any unpaid amount carried forward from earlier bills, in rupees."
+    },
+    "supply_address": {
+      "type": "object",
+      "description": "The address of the premises the connection supplies, as printed under the consumer name.",
+      "properties": {
+        "line1": {
+          "type": "string",
+          "description": "House or door number and street, the first line of the printed address."
+        },
+        "locality": {
+          "type": "string",
+          "description": "Locality, village or area name from the printed address."
+        },
+        "district": {
+          "type": "string",
+          "description": "District or city name from the printed address."
+        },
+        "state": {
+          "type": "string",
+          "description": "State name from the printed address."
+        },
+        "pin_code": {
+          "type": "string",
+          "description": "Six digit postal code. Keep it as text so leading zeros survive."
+        }
+      }
+    },
+    "tariff_slabs": {
+      "type": "array",
+      "description": "One entry per slab row in the energy charge breakdown table.",
+      "items": {
+        "type": "object",
+        "description": "A single slab row from the energy charge table.",
+        "properties": {
+          "slab_label": {
+            "type": "string",
+            "description": "The unit range this row covers, exactly as printed in the first column."
+          },
+          "units": {
+            "type": "number",
+            "description": "Units billed inside this slab."
+          },
+          "rate_per_unit": {
+            "type": "number",
+            "description": "Rate charged per unit in this slab, in rupees."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount charged for this slab row, in rupees."
+          }
+        }
+      }
+    },
+    "other_charges": {
+      "type": "array",
+      "description": "One entry per line in the charges and adjustments table below the energy charges.",
+      "items": {
+        "type": "object",
+        "description": "A single charge or adjustment line.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "The charge description exactly as printed, for example fixed charge or electricity duty."
+          },
+          "amount": {
+            "type": "number",
+            "description": "The amount of this charge in rupees. Negative when the line is a rebate."
+          }
+        }
+      }
+    }
+  }
+}
