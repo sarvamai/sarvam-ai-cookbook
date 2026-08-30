@@ -142,8 +142,45 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
             "messages": messages,
             "model": "sarvam-105b",
             "temperature": 0.7,
-            "max_tokens": 4000
+            "max_tokens": 4000,
+            "reasoning_effort": "low"
         }
     )
     
-    return response.json() 
+    return response.json()
+
+def generate_travel_tips(destination, budget, language="en"):
+    """Generate practical travel tips using Sarvam's Chat Completions API."""
+    headers = {
+        "Authorization": f"Bearer {SARVAM_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    tips_prompt = f"""You are an expert travel advisor specializing in {destination}. Please only generate the travel tips in {language}. Don't use any other language.
+    Based on the destination {destination} and budget level {budget}, provide practical travel tips including:
+    - Best time to visit
+    - Local transportation options
+    - Cultural etiquette and customs
+    - Safety considerations
+    - Essential local phrases
+    - Packing recommendations
+    Format the response in a clear, structured way. Keep each section short and concise. Don't blabber a lot"""
+
+    messages = [
+        {"role": "system", "content": tips_prompt},
+        {"role": "user", "content": f"Please provide practical travel tips for {destination}."}
+    ]
+
+    response = requests.post(
+        f"{BASE_URL}/chat/completions",
+        headers=headers,
+        json={
+            "messages": messages,
+            "model": "sarvam-105b",
+            "temperature": 0.7,
+            "max_tokens": 4000,
+            "reasoning_effort": "low"
+        }
+    )
+
+    return response.json()
