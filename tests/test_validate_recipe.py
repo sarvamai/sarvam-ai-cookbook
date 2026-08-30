@@ -30,6 +30,7 @@ from validate_recipe import (  # noqa: E402
     Issue,
     check_emoji,
     check_gitignore,
+    check_markdown_links,
     check_notebook_structure,
     check_required_files,
     check_requirements,
@@ -601,6 +602,61 @@ class TestEmoji:
 # ---------------------------------------------------------------------------
 # TestValidateRecipe  (integration — exercises the full pipeline)
 # ---------------------------------------------------------------------------
+
+
+class TestMarkdownLinks:
+    """Broken relative links render as nothing on GitHub and are easy to miss."""
+
+    def test_resolving_links_pass(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / "screenshots").mkdir()
+        (d / "screenshots" / "inputs.png").write_bytes(b"\x89PNG")
+        (d / "README.md").write_text(
+            "![Input](./screenshots/inputs.png)\n[Guide](https://docs.sarvam.ai)\n",
+            encoding="utf-8",
+        )
+        assert check_markdown_links(d) == []
+
+    def test_missing_image_target_flagged(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / "README.md").write_text(
+            "![Input](./screenshots/inputs.jpeg)\n", encoding="utf-8"
+        )
+        assert any(i.check == "markdown-links" for i in _errors(check_markdown_links(d)))
+
+    def test_wrong_relative_prefix_flagged(self, tmp_path: Path) -> None:
+        # backend/README.md referring to ./backend/screenshots/ resolves to
+        # backend/backend/screenshots/ — the copy-paste that caused this bug.
+        d = _make_recipe(tmp_path)
+        (d / "backend" / "screenshots").mkdir(parents=True)
+        (d / "backend" / "screenshots" / "inputs.png").write_bytes(b"\x89PNG")
+        (d / "backend" / "README.md").write_text(
+            "![Input](./backend/screenshots/inputs.png)\n", encoding="utf-8"
+        )
+        assert any(i.check == "markdown-links" for i in _errors(check_markdown_links(d)))
+
+    def test_external_and_anchor_targets_ignored(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / "README.md").write_text(
+            "[Docs](https://docs.sarvam.ai/x)\n"
+            "[Mail](mailto:hi@sarvam.ai)\n"
+            "[Anchor](#heading)\n"
+            "[Proto](//cdn.example.com/a.png)\n",
+            encoding="utf-8",
+        )
+        assert check_markdown_links(d) == []
+
+    def test_percent_encoded_and_angle_bracket_targets_resolve(self, tmp_path: Path) -> None:
+        # The root README links notebooks whose paths contain spaces, using
+        # both <...> and %20 forms; neither may be reported as broken.
+        d = _make_recipe(tmp_path)
+        (d / "my notes").mkdir()
+        (d / "my notes" / "a.md").write_text("x\n", encoding="utf-8")
+        (d / "README.md").write_text(
+            "[Angle](<./my notes/a.md>)\n[Encoded](./my%20notes/a.md)\n",
+            encoding="utf-8",
+        )
+        assert check_markdown_links(d) == []
 
 
 class TestValidateRecipe:
