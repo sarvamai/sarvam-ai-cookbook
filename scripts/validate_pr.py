@@ -23,9 +23,13 @@ from pathlib import Path
 
 from sarvam_checks import (
     Issue,
+    git_diff_added_lines,
     git_diff_name_only,
+    scan_added_lines_for_allowlist,
+    scan_added_lines_for_deprecated_api,
     scan_file_for_client_side_keys,
     scan_file_for_secrets,
+    should_scan_file,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -41,8 +45,14 @@ def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     return paths
 
 
-def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
-    """Run PR-scoped secret checks between base_ref and head_ref."""
+def validate_pr_with_refs(
+    base_ref: str, head_ref: str = "HEAD", *, strict: bool = False
+) -> list[Issue]:
+    """Run PR-scoped secret and Sarvam API compliance checks.
+
+    Model allowlist and deprecated-endpoint checks run against added lines only,
+    so pre-existing usage elsewhere in a touched file is not reported.
+    """
     issues: list[Issue] = []
     changed = changed_paths(base_ref, head_ref)
     if not changed:
@@ -57,12 +67,22 @@ def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
         issues.extend(scan_file_for_secrets(full, REPO_ROOT))
         issues.extend(scan_file_for_client_side_keys(full))
 
+        if should_scan_file(full):
+            added = git_diff_added_lines(base_ref, str(rel), head_ref)
+            if added:
+                issues.extend(
+                    scan_added_lines_for_allowlist(rel, added, strict=strict)
+                )
+                issues.extend(
+                    scan_added_lines_for_deprecated_api(rel, added, strict=strict)
+                )
+
     return issues
 
 
-def validate_pr(base_ref: str) -> list[Issue]:
-    """Run PR-scoped secret checks on changed files."""
-    return validate_pr_with_refs(base_ref, "HEAD")
+def validate_pr(base_ref: str, *, strict: bool = False) -> list[Issue]:
+    """Run PR-scoped secret and API compliance checks on changed files."""
+    return validate_pr_with_refs(base_ref, "HEAD", strict=strict)
 
 
 def main() -> int:
@@ -86,7 +106,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    issues = validate_pr(args.base_ref)
+    issues = validate_pr(args.base_ref, strict=args.strict)
     errors = [i for i in issues if i.severity == "error"]
     warnings = [i for i in issues if i.severity == "warning"]
 

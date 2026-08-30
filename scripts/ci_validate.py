@@ -52,9 +52,11 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     return []
 
 
-def run_validation(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
+def run_validation(
+    base_ref: str, head_ref: str = "HEAD", *, strict: bool = False
+) -> list[Issue]:
     issues: list[Issue] = []
-    issues.extend(validate_pr_with_refs(base_ref, head_ref))
+    issues.extend(validate_pr_with_refs(base_ref, head_ref, strict=strict))
     for recipe_dir in changed_recipe_dirs(base_ref, head_ref):
         issues.extend(validate_recipe(REPO_ROOT / recipe_dir))
     return issues
@@ -65,9 +67,14 @@ def main() -> int:
     parser.add_argument("--base-ref", default="main")
     parser.add_argument("--head-ref", default="HEAD")
     parser.add_argument("--output", help="Write JSON issues to this file")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Report model allowlist and deprecated-API findings as errors.",
+    )
     args = parser.parse_args()
 
-    issues = run_validation(args.base_ref, args.head_ref)
+    issues = run_validation(args.base_ref, args.head_ref, strict=args.strict)
     payload = [_issue_dict(i) for i in issues]
     errors = [i for i in issues if i.severity == "error"]
 

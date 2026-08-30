@@ -72,6 +72,32 @@ SCAN_SKIP_NAMES = frozenset({".gitkeep", "package-lock.json"})
 
 LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 
+# Endpoints superseded on docs.sarvam.ai, as (pattern, message, check) triples.
+# Consumed by scan_added_lines_for_deprecated_api(). Patterns are matched against
+# individual added lines, so pre-existing usage on main is untouched until edited.
+DEPRECATED_API_RULES: tuple[tuple[re.Pattern[str], str, str], ...] = (
+    (
+        re.compile(r"wss://api\.sarvam\.ai/speech-to-text(?!-realtime)"),
+        "Legacy STT WebSocket endpoint — use wss://api.sarvam.ai/speech-to-text-realtime/ws",
+        "legacy-endpoint",
+    ),
+    (
+        re.compile(r"api\.sarvam\.ai/speech-to-text-translate\b"),
+        'Legacy speech-to-text-translate endpoint — use /speech-to-text with mode="translate"',
+        "legacy-endpoint",
+    ),
+    (
+        re.compile(r"api\.sarvam\.ai/document-intelligence\b"),
+        "Legacy Document Intelligence endpoint — use /doc-ai/v1/job/*",
+        "legacy-endpoint",
+    ),
+    (
+        re.compile(r"api\.sarvam\.ai/speech-to-text/job/(?!v1\b)"),
+        "Unversioned batch speech-to-text job path — use /speech-to-text/job/v1/...",
+        "legacy-endpoint",
+    ),
+)
+
 
 # ---------------------------------------------------------------------------
 # Path helpers

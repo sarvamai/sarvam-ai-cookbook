@@ -9,7 +9,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from sarvam_checks import scan_added_lines_for_allowlist  # noqa: E402
+from sarvam_checks import (  # noqa: E402
+    DEPRECATED_API_RULES,
+    scan_added_lines_for_allowlist,
+    scan_added_lines_for_deprecated_api,
+)
 from sarvam_rules import (  # noqa: E402
     extract_models,
     get_rules,
@@ -121,3 +125,62 @@ class TestAllowlistValidation:
         path.write_text(json.dumps(stale, indent=2) + "\n")
         _, needs_sync = sync_rules()
         assert needs_sync is True
+
+
+class TestDeprecatedApiRules:
+    """DEPRECATED_API_RULES was referenced but never defined; see issue."""
+
+    def test_rules_are_defined(self) -> None:
+        assert DEPRECATED_API_RULES
+
+    def test_scan_runs_without_error(self) -> None:
+        # Previously raised NameError on the first non-comment line.
+        assert scan_added_lines_for_deprecated_api(
+            Path("app.py"), [(1, "x = 1")], strict=False
+        ) == []
+
+    def test_legacy_stt_websocket_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, 'WS = "wss://api.sarvam.ai/speech-to-text"')],
+            strict=False,
+        )
+        assert [i.check for i in issues] == ["legacy-endpoint"]
+
+    def test_realtime_websocket_not_flagged(self) -> None:
+        # examples/Realtime_Speech_Captioning/app.py uses this on main.
+        assert scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, 'WS = "wss://api.sarvam.ai/speech-to-text-realtime/ws"')],
+            strict=False,
+        ) == []
+
+    def test_versioned_batch_path_not_flagged(self) -> None:
+        assert scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, 'url = "https://api.sarvam.ai/speech-to-text/job/v1/init"')],
+            strict=False,
+        ) == []
+
+    def test_unversioned_batch_path_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, 'url = "https://api.sarvam.ai/speech-to-text/job/init"')],
+            strict=False,
+        )
+        assert [i.check for i in issues] == ["legacy-endpoint"]
+
+    def test_strict_promotes_to_error(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, 'WS = "wss://api.sarvam.ai/speech-to-text"')],
+            strict=True,
+        )
+        assert [i.severity for i in issues] == ["error"]
+
+    def test_comments_are_skipped(self) -> None:
+        assert scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(1, '# wss://api.sarvam.ai/speech-to-text is legacy')],
+            strict=False,
+        ) == []
