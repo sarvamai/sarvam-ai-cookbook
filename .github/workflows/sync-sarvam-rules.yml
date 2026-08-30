@@ -1,7 +1,9 @@
 name: Sync Sarvam API Rules
 
-# Weekly refresh of scripts/sarvam_api_rules.json from docs.sarvam.ai.
-# Opens a PR when the reference file changes.
+# Weekly regeneration of scripts/sarvam_api_rules.json from the canonical
+# lists held in scripts/sync_sarvam_rules.py. Opens a PR only when the rules
+# themselves differ — the script leaves the file untouched otherwise, so a
+# quiet week produces no run output and no pull request.
 
 on:
   schedule:
@@ -41,7 +43,9 @@ jobs:
           commit-message: "chore(rules): sync Sarvam API rules reference from docs"
           title: "chore(rules): sync Sarvam API rules reference from docs"
           body: |
-            Automated weekly sync of `scripts/sarvam_api_rules.json` from [docs.sarvam.ai](https://docs.sarvam.ai).
+            Automated weekly regeneration of `scripts/sarvam_api_rules.json` from the canonical lists in `scripts/sync_sarvam_rules.py`.
+
+            The lists are maintained by hand in that script — nothing is fetched from [docs.sarvam.ai](https://docs.sarvam.ai) beyond a reachability check. This PR therefore only appears when someone has edited those lists; a week with no edit produces no PR.
 
             This file is a contributor reference for current models and language codes. CI does not block PRs on model names yet.
 

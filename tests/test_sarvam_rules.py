@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,27 @@ from sarvam_rules import (  # noqa: E402
     get_rules,
     load_rules,
 )
-from sync_sarvam_rules import canonical_rules, rules_fingerprint, sync_rules  # noqa: E402
+from sync_sarvam_rules import (  # noqa: E402
+    canonical_rules,
+    main as sync_main,
+    rules_fingerprint,
+    sync_rules,
+)
+
+
+class _AdvancingClock:
+    """Stands in for the datetime module, one second later on each call.
+
+    Makes a rewrite observable: without it, two runs inside the same second
+    render byte-identical output and a rewrite looks like a skipped write.
+    """
+
+    def __init__(self) -> None:
+        self._seconds = 0
+
+    def now(self, tz: timezone | None = None) -> datetime:
+        self._seconds += 1
+        return datetime(2026, 1, 1, 0, 0, self._seconds, tzinfo=tz or timezone.utc)
 
 
 class TestRulesFile:
@@ -121,3 +142,56 @@ class TestAllowlistValidation:
         path.write_text(json.dumps(stale, indent=2) + "\n")
         _, needs_sync = sync_rules()
         assert needs_sync is True
+
+    def test_write_is_skipped_when_rules_are_unchanged(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # render_rules() stamps a fresh synced_at every call, so writing
+        # unconditionally dirtied the tree on every run and made the weekly
+        # workflow open a pull request containing only a new timestamp.
+        #
+        # The clock is advanced between runs deliberately. synced_at has
+        # one-second resolution, so two real back-to-back runs can produce the
+        # same timestamp by chance and the assertion would hold even against
+        # the unfixed code.
+        path = tmp_path / "sarvam_api_rules.json"
+        monkeypatch.setattr("sync_sarvam_rules.RULES_PATH", path)
+        monkeypatch.setattr(sys, "argv", ["sync_sarvam_rules.py"])
+        monkeypatch.setattr("sync_sarvam_rules.datetime", _AdvancingClock())
+
+        assert sync_main() == 0
+        first = path.read_bytes()
+
+        assert sync_main() == 0
+        assert path.read_bytes() == first, (
+            "second run rewrote the file with only a new synced_at, which is "
+            "what makes the weekly workflow open an empty pull request"
+        )
+
+    def test_write_happens_when_rules_actually_change(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        path = tmp_path / "sarvam_api_rules.json"
+        monkeypatch.setattr("sync_sarvam_rules.RULES_PATH", path)
+        monkeypatch.setattr(sys, "argv", ["sync_sarvam_rules.py"])
+
+        stale = canonical_rules()
+        stale["models"]["chat"]["allowed"] = ["sarvam-obsolete"]
+        path.write_text(json.dumps(stale, indent=2) + "\n", encoding="utf-8")
+
+        assert sync_main() == 0
+        written = json.loads(path.read_text(encoding="utf-8"))
+        assert written["models"]["chat"]["allowed"] == canonical_rules()["models"]["chat"]["allowed"]
+
+    def test_unreadable_rules_file_is_rewritten_not_raised(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Gating the write on `changed` makes this the only path that can
+        # repair the file, so it must not crash on malformed JSON.
+        path = tmp_path / "sarvam_api_rules.json"
+        path.write_text("{ not valid json", encoding="utf-8")
+        monkeypatch.setattr("sync_sarvam_rules.RULES_PATH", path)
+        monkeypatch.setattr(sys, "argv", ["sync_sarvam_rules.py"])
+
+        assert sync_main() == 0
+        assert json.loads(path.read_text(encoding="utf-8"))["schema_version"] == 1
