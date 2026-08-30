@@ -396,6 +396,40 @@ class TestSecrets:
         (d / "sample_data" / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 100)
         assert not _errors(check_secrets(d))
 
+    def test_hardcoded_key_in_bom_notebook_flagged(self, tmp_path: Path) -> None:
+        # A notebook saved with a UTF-8 BOM must still be scanned; previously
+        # the BOM made the parse fail and the notebook was skipped silently.
+        d = _make_recipe(tmp_path, "my-recipe")
+        nb_path = d / "my_recipe.ipynb"
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        nb["cells"].append({
+            "cell_type": "code",
+            "source": ['SARVAM_API_KEY = "sk-real-api-key-12345678901234"\n'],
+            "metadata": {},
+            "outputs": [],
+            "execution_count": None,
+        })
+        nb_path.write_text(json.dumps(nb), encoding="utf-8-sig")
+        assert nb_path.read_bytes().startswith(b"\xef\xbb\xbf")
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
+    def test_unparseable_notebook_reported_not_skipped(self, tmp_path: Path) -> None:
+        # An unscannable notebook must fail validation rather than pass it.
+        d = _make_recipe(tmp_path, "my-recipe")
+        (d / "my_recipe.ipynb").write_text("{not valid json", encoding="utf-8")
+        errors = _errors(check_secrets(d))
+        assert any(i.check == "secrets" and "Cannot parse" in i.message for i in errors)
+
+    def test_hyphenated_subscription_key_flagged(self, tmp_path: Path) -> None:
+        # api-subscription-key is the header spelling used by the Sarvam API and
+        # must be caught alongside the underscore form.
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'api-subscription-key = "a-real-subscription-key-1234567890"\n',
+            encoding="utf-8",
+        )
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
 
 # ---------------------------------------------------------------------------
 # TestNotebookStructure

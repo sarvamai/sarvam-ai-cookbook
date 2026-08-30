@@ -188,21 +188,34 @@ def git_diff_added_lines(base_ref: str, file_path: str, head_ref: str = "HEAD") 
 # ---------------------------------------------------------------------------
 
 
-def notebook_cell_sources(nb_path: Path) -> list[str]:
-    """Parse notebook JSON and return each cell's source text."""
+def load_notebook_cells(nb_path: Path) -> list[dict] | None:
+    """Parse notebook JSON and return its cell list, or None if unparseable.
+
+    Read as utf-8-sig so notebooks saved with a UTF-8 BOM (common on Windows)
+    parse normally instead of failing and being skipped by the callers.
+    """
     try:
         nb = json.loads(nb_path.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+        return None
+    cells = nb.get("cells")
+    return cells if isinstance(cells, list) else []
+
+
+def cell_source(cell: dict) -> str:
+    """Return a cell's source text, handling list-of-strings and plain string."""
+    src = cell.get("source", [])
+    if isinstance(src, list):
+        return "".join(src)
+    return str(src) if src else ""
+
+
+def notebook_cell_sources(nb_path: Path) -> list[str]:
+    """Parse notebook JSON and return each cell's source text."""
+    cells = load_notebook_cells(nb_path)
+    if not cells:
         return []
-    cells = nb.get("cells", [])
-    sources: list[str] = []
-    for cell in cells:
-        src = cell.get("source", [])
-        if isinstance(src, list):
-            sources.append("".join(src))
-        else:
-            sources.append(str(src) if src else "")
-    return sources
+    return [cell_source(cell) for cell in cells]
 
 
 # ---------------------------------------------------------------------------
