@@ -24,6 +24,9 @@ All types of contributions are encouraged and valued. See the [Table of Contents
       - [Before Submitting an Example](#before-submitting-an-example)
       - [How Do I Submit an Example?](#how-do-i-submit-an-example)
       - [Required Files (Notebook Recipes)](#required-files-notebook-recipes)
+      - [Dependency Rules](#dependency-rules)
+      - [Notebook Structure](#notebook-structure)
+      - [Code Conventions](#code-conventions)
       - [Security Requirements](#security-requirements)
       - [Sarvam API Standards](#sarvam-api-standards)
       - [Automated PR Checks](#automated-pr-checks)
@@ -102,7 +105,7 @@ New notebook-based examples must follow the layout in [`examples/TEMPLATE/`](exa
 
 | File | Purpose |
 |------|---------|
-| `<recipe_name>.ipynb` | Main notebook (snake_case name matching the directory) |
+| `<recipe_name>.ipynb` | Main notebook. The name is the directory name with hyphens turned into underscores, so `examples/bill-interpreter/` must hold `bill_interpreter.ipynb` |
 | `README.md` | Setup, usage, and link to [Sarvam docs](https://docs.sarvam.ai) |
 | `requirements.txt` | Pinned dependencies (`package>=x.y.z`) |
 | `.env.example` | Placeholder env vars (`SARVAM_API_KEY=your-sarvam-api-key`) |
@@ -110,12 +113,77 @@ New notebook-based examples must follow the layout in [`examples/TEMPLATE/`](exa
 | `sample_data/.gitkeep` | Placeholder for input files |
 | `outputs/.gitkeep` | Placeholder for generated output |
 
+Every file above is checked. A missing one is a blocking error, and so is a `.gitignore` that
+does not contain all three of `.env`, `sample_data/*` and `outputs/*`.
+
+The file list is not the whole check. The validator also has blocking rules for dependencies,
+for the notebook's cell layout, and for emoji — they are in the three sections that follow.
+Copying `examples/TEMPLATE/` gives you a recipe that already satisfies every one of them.
+
 Validate locally before opening a PR:
 
 ```bash
 pip install "packaging>=23.0"
 python scripts/validate_recipe.py examples/your-recipe
 ```
+
+Add `--strict` to make the warnings below fail the run as well:
+
+```bash
+python scripts/validate_recipe.py examples/your-recipe --strict
+```
+
+#### Dependency Rules
+
+`requirements.txt` is read line by line. Blank lines, comments, and lines starting with `-r`,
+`-e`, `git+`, `http://` or `https://` are skipped. Everything else must follow all three of
+these. Each one is blocking:
+
+| Rule | Fails the check |
+|------|-----------------|
+| Every package needs a `>=` pin | `pandas`, `pandas==2.0.0`, `pandas~=2.0` |
+| `sarvamai` must be `>=0.1.24` (earlier versions use different parameter names) | `sarvamai>=0.1.20` |
+| `Pillow`, if you list it at all, must be `>=12.1.1` (known CVE) | `Pillow>=11.0.0` |
+
+Leaving `sarvamai` out of the file altogether is a warning, not an error.
+
+#### Notebook Structure
+
+The notebook is read as JSON and is never executed. These are blocking:
+
+- The file must be valid JSON and must have at least two cells.
+- The first cell (index 0) must be a **markdown** cell — a title and a short pipeline overview.
+- The second cell (index 1) must be a **code** cell.
+- Some code cell must contain `from __future__ import annotations`.
+- Some code cell must contain `raise RuntimeError` — the fail-fast guard for a missing API key.
+
+The guard looks like this:
+
+```python
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+if not SARVAM_API_KEY:
+    raise RuntimeError("Set SARVAM_API_KEY in your environment or .env file before running.")
+```
+
+Two more are warnings, so they only fail the run under `--strict`: the second cell should
+contain `pip install`, and some code cell should mention `pathlib` (prefer `Path` over
+`os.path`).
+
+#### Code Conventions
+
+**No emoji.** All three of these are blocking:
+
+- no emoji anywhere in a markdown cell
+- no emoji on a code line that calls `print(`
+- no emoji in an inline comment — anything from a `#` to the end of the line
+
+Indian-language text is safe. The check only looks at the Unicode emoji blocks, so Devanagari,
+Tamil, Telugu and the other Indic scripts are never flagged.
+
+**No hardcoded keys.** Every file in the recipe directory is scanned for
+`SARVAM_API_KEY = "..."` or `api_subscription_key="..."` holding a real-looking value.
+Notebooks are scanned cell by cell. Placeholders such as `YOUR_SARVAM_API_KEY`, `your_key`,
+`your-key` and `<your ...>` are fine, and so is passing a variable instead of a string.
 
 #### Security Requirements
 
@@ -138,10 +206,24 @@ Use current models and endpoints from [docs.sarvam.ai](https://docs.sarvam.ai):
 | Chat / LLM | `sarvam-105b` | `sarvam-m`, `sarvam-30b` (legacy) |
 | Speech-to-text | `saaras:v3` | `saarika:v2.5` (deprecated) |
 | Text-to-speech | `bulbul:v3` | `bulbul:v2` |
-| Language codes | BCP-47 with `-IN` suffix | e.g. `hi-IN`, `od-IN`, `or-IN` |
+| Language codes | BCP-47 with an `-IN` suffix, e.g. `hi-IN`, `ta-IN` | Bare codes with no suffix, e.g. `hi`, `ta` |
 | SDK | `sarvamai>=0.1.24` | Unpinned dependencies |
 
 Prefer the official `sarvamai` Python/JS SDK over raw HTTP where possible.
+
+Odia is spelled two different ways and the endpoints do not agree, so check which one you need
+before you write it:
+
+- Use `od-IN` for text-to-speech, speech-to-text (including the `speech_to_text_streaming`
+  client), translate and transliterate. These reject `or-IN`.
+- Use `or-IN` for dubbing and for the realtime client, `speech_to_text_realtime_streaming`.
+  These reject `od-IN`.
+
+Neither spelling is wrong on its own — it depends on the endpoint. This was read straight off
+the `sarvamai` 0.1.30 SDK with `typing.get_args` on `TextToSpeechLanguage`,
+`SpeechToTextLanguage`, `DubbingLanguage` and `SpeechToTextRealtimeStreamingLanguageCode`.
+Note that `scripts/sarvam_api_rules.json` still lists both spellings for speech-to-text and
+text-to-speech, which is [issue #157](https://github.com/sarvamai/sarvam-ai-cookbook/issues/157).
 
 #### Automated PR Checks
 
@@ -151,8 +233,12 @@ CI runs on every pull request touching `examples/`, `getting-started/`, or valid
 |-------|--------------|
 | `pytest tests/` | Unit tests for validation rules |
 | `scripts/validate_pr.py` | Secret scan on changed files (blocking) |
-| `scripts/validate_recipe.py` | Structure check for **new notebook recipes** (`.env.example` + `.ipynb`) only |
+| `scripts/validate_recipe.py` | Full recipe check — required files, dependency pins, notebook cell layout, emoji, hardcoded keys. Runs only on directories that have **both** `.env.example` and a `*.ipynb` |
 | `scripts/sarvam_api_rules.json` | Current Sarvam models (reference; synced weekly) |
+
+Every blocking rule `validate_recipe.py` applies is written down above, in
+[Required Files](#required-files-notebook-recipes), [Dependency Rules](#dependency-rules),
+[Notebook Structure](#notebook-structure) and [Code Conventions](#code-conventions).
 
 **Local workflow** (recommended before pushing):
 
