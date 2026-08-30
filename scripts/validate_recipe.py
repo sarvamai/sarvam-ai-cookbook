@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
-from packaging.version import Version
+from packaging.version import InvalidVersion, Version
 
 # ---------------------------------------------------------------------------
 # Data types
@@ -210,6 +210,27 @@ def check_gitignore(recipe_dir: Path) -> list[Issue]:
     ]
 
 
+def _pinned_version(line: str) -> Version | None:
+    """Extract the >= pinned version from a requirements.txt line.
+
+    Args:
+        line: A single stripped requirements.txt line.
+
+    Returns:
+        The pinned Version, or None when the line carries no >= pin or the
+        pinned text is not a valid version (for example 'sarvamai>=0.1.24.').
+        A malformed pin is reported as an Issue by the caller rather than
+        raising InvalidVersion out of the whole validation run.
+    """
+    m = re.search(r">=([\d.]+)", line)
+    if not m:
+        return None
+    try:
+        return Version(m.group(1))
+    except InvalidVersion:
+        return None
+
+
 def check_requirements(recipe_dir: Path) -> list[Issue]:
     """Validate dependency version pins in requirements.txt.
 
@@ -240,7 +261,8 @@ def check_requirements(recipe_dir: Path) -> list[Issue]:
         # Extract package name (handles extras like Pillow[jpeg]).
         pkg_name = re.split(r"[>=<!;\[\s@]", line, maxsplit=1)[0].lower()
 
-        if not re.search(r">=", line):
+        has_pin = bool(re.search(r">=", line))
+        if not has_pin:
             issues.append(Issue(
                 "error", "requirements",
                 f"Package missing >= pin: {line!r}",
@@ -249,8 +271,14 @@ def check_requirements(recipe_dir: Path) -> list[Issue]:
 
         if pkg_name == "sarvamai":
             has_sarvam = True
-            m = re.search(r">=([\d.]+)", line)
-            if m and Version(m.group(1)) < _MIN_SARVAMAI_VERSION:
+            pinned = _pinned_version(line)
+            if has_pin and pinned is None:
+                issues.append(Issue(
+                    "error", "requirements",
+                    f"Unparseable version pin: {line!r}",
+                    f"Use a valid >= version pin (example: sarvamai>={_MIN_SARVAMAI_VERSION}).",
+                ))
+            elif pinned is not None and pinned < _MIN_SARVAMAI_VERSION:
                 issues.append(Issue(
                     "error", "requirements",
                     f"sarvamai must be >={_MIN_SARVAMAI_VERSION}, found: {line!r}",
@@ -258,8 +286,14 @@ def check_requirements(recipe_dir: Path) -> list[Issue]:
                 ))
 
         if pkg_name == "pillow":
-            m = re.search(r">=([\d.]+)", line)
-            if m and Version(m.group(1)) < _MIN_PILLOW_VERSION:
+            pinned = _pinned_version(line)
+            if has_pin and pinned is None:
+                issues.append(Issue(
+                    "error", "requirements",
+                    f"Unparseable version pin: {line!r}",
+                    f"Use a valid >= version pin (example: Pillow>={_MIN_PILLOW_VERSION}).",
+                ))
+            elif pinned is not None and pinned < _MIN_PILLOW_VERSION:
                 issues.append(Issue(
                     "error", "requirements",
                     f"Pillow must be >={_MIN_PILLOW_VERSION} (CVE guard), found: {line!r}",
@@ -534,7 +568,16 @@ def auto_fix(recipe_dir: Path) -> list[str]:
     fixes: list[str] = []
 
     gitignore = recipe_dir / ".gitignore"
-    required_patterns = [".env", "sample_data/*", "outputs/*"]
+    # The negations keep the .gitkeep placeholders created below trackable —
+    # without them sample_data/* and outputs/* ignore the very files this
+    # function just wrote, and the recipe then fails validation for them.
+    required_patterns = [
+        ".env",
+        "sample_data/*",
+        "!sample_data/.gitkeep",
+        "outputs/*",
+        "!outputs/.gitkeep",
+    ]
 
     if not gitignore.exists():
         gitignore.write_text("\n".join(required_patterns) + "\n")

@@ -13,10 +13,13 @@ Test organisation mirrors the check functions in validate_recipe.py:
     TestNotebookStructure   → check_notebook_structure
     TestEmoji               → check_emoji
     TestValidateRecipe      → validate_recipe (integration)
+    TestAutoFix             → auto_fix
 """
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -28,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from validate_recipe import (  # noqa: E402
     Issue,
+    auto_fix,
     check_emoji,
     check_gitignore,
     check_notebook_structure,
@@ -326,6 +330,23 @@ class TestRequirements:
         (d / "requirements.txt").write_text("requests>=2.31.0\n", encoding="utf-8")
         assert not _errors(check_requirements(d))
         assert any("sarvamai" in i.message for i in _warnings(check_requirements(d)))
+
+    def test_malformed_sarvamai_pin_is_reported_not_raised(self, tmp_path: Path) -> None:
+        # '0.1.24.' has a trailing dot and is not a valid version. It must be
+        # reported as an error, never raise out of the checker — an exception
+        # here aborts the whole CI run before results are written.
+        d = _make_recipe(tmp_path)
+        (d / "requirements.txt").write_text("sarvamai>=0.1.24.\n", encoding="utf-8")
+        errors = _errors(check_requirements(d))
+        assert any("0.1.24." in i.message for i in errors)
+
+    def test_malformed_pillow_pin_is_reported_not_raised(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / "requirements.txt").write_text(
+            "sarvamai>=0.1.24\nPillow>=12.1.\n", encoding="utf-8"
+        )
+        errors = _errors(check_requirements(d))
+        assert any("12.1." in i.message for i in errors)
 
     def test_absent_requirements_returns_empty_list(self, tmp_path: Path) -> None:
         d = _make_recipe(tmp_path)
@@ -661,3 +682,51 @@ class TestValidateRecipe:
         assert "requirements" in checks_found
         assert "notebook-structure" in checks_found
         assert "no-emoji" in checks_found
+
+
+# ---------------------------------------------------------------------------
+# TestAutoFix
+# ---------------------------------------------------------------------------
+
+
+class TestAutoFix:
+    def test_gitignore_negates_the_gitkeep_placeholders(self, tmp_path: Path) -> None:
+        # sample_data/* and outputs/* would otherwise ignore the .gitkeep files
+        # auto_fix creates in the same run, so the negations must be written too.
+        d = tmp_path / "my-recipe"
+        d.mkdir()
+        auto_fix(d)
+        lines = (d / ".gitignore").read_text(encoding="utf-8").splitlines()
+        assert "!sample_data/.gitkeep" in lines
+        assert "!outputs/.gitkeep" in lines
+
+    def test_missing_negations_appended_to_existing_gitignore(self, tmp_path: Path) -> None:
+        d = tmp_path / "my-recipe"
+        d.mkdir()
+        (d / ".gitignore").write_text(
+            ".env\nsample_data/*\noutputs/*\n", encoding="utf-8"
+        )
+        auto_fix(d)
+        lines = (d / ".gitignore").read_text(encoding="utf-8").splitlines()
+        assert "!sample_data/.gitkeep" in lines
+        assert "!outputs/.gitkeep" in lines
+
+    @pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
+    def test_git_tracks_the_gitkeep_files_after_auto_fix(self, tmp_path: Path) -> None:
+        # The end-to-end consequence: after auto_fix, a real 'git add -A' must
+        # stage both .gitkeep files, otherwise the recipe fails validation for
+        # the very files auto_fix just created.
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+        d = tmp_path / "my-recipe"
+        d.mkdir()
+        auto_fix(d)
+        subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+        tracked = subprocess.run(
+            ["git", "ls-files"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+        assert "my-recipe/sample_data/.gitkeep" in tracked
+        assert "my-recipe/outputs/.gitkeep" in tracked
