@@ -17,7 +17,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from sarvam_checks import Issue, is_recipe_directory  # noqa: E402
+from sarvam_checks import Issue, is_example_directory  # noqa: E402
 from validate_pr import validate_pr_with_refs  # noqa: E402
 from validate_recipe import validate_recipe  # noqa: E402
 
@@ -31,7 +31,7 @@ def _issue_dict(issue: Issue) -> dict:
     }
 
 
-def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
+def changed_example_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
             ["git", "diff", "--name-only", ref_pair],
@@ -46,7 +46,7 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
             parts = path.strip().split("/")
             if len(parts) >= 2 and parts[0] == "examples" and parts[1] not in {"TEMPLATE", ""}:
                 candidate = REPO_ROOT / "examples" / parts[1]
-                if is_recipe_directory(candidate):
+                if is_example_directory(candidate):
                     dirs.add(f"examples/{parts[1]}")
         return sorted(Path(d) for d in dirs)
     return []
@@ -55,7 +55,7 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
 def run_validation(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
     issues: list[Issue] = []
     issues.extend(validate_pr_with_refs(base_ref, head_ref))
-    for recipe_dir in changed_recipe_dirs(base_ref, head_ref):
+    for recipe_dir in changed_example_dirs(base_ref, head_ref):
         issues.extend(validate_recipe(REPO_ROOT / recipe_dir))
     return issues
 

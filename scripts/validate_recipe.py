@@ -30,6 +30,10 @@ from typing import NamedTuple
 
 from packaging.version import Version
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from sarvam_checks import is_app_example  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
@@ -168,7 +172,7 @@ def check_required_files(recipe_dir: Path) -> list[Issue]:
         recipe_dir / "sample_data" / ".gitkeep",
         recipe_dir / "outputs" / ".gitkeep",
     ]
-    return [
+    issues = [
         Issue(
             "error",
             "required-files",
@@ -177,6 +181,46 @@ def check_required_files(recipe_dir: Path) -> list[Issue]:
         )
         for p in required
         if not p.exists()
+    ]
+
+    # A directory whose notebook is simply named differently has a notebook;
+    # reporting it as missing sends the contributor looking for the wrong thing.
+    if not (recipe_dir / nb_name).exists() and any(recipe_dir.glob("*.ipynb")):
+        found = sorted(p.name for p in recipe_dir.glob("*.ipynb"))
+        issues = [i for i in issues if not i.message.endswith(nb_name)]
+        issues.append(Issue(
+            "warning",
+            "required-files",
+            f"Notebook name does not match the directory: expected {nb_name}, found {', '.join(found)}",
+            f"Rename the notebook to {nb_name} so links and tooling can find it.",
+        ))
+
+    return issues
+
+
+def check_app_example_files(recipe_dir: Path) -> list[Issue]:
+    """Check the minimum documentation an app-style example should carry.
+
+    App-style examples are exempt from the notebook-recipe file list, but a
+    reader still needs to know what the example does and which environment
+    variables it wants. Reported as warnings: these directories predate the
+    check, and an incomplete README should not block an unrelated fix.
+
+    Args:
+        recipe_dir: Path to the example directory being checked.
+
+    Returns:
+        One warning Issue per missing file.
+    """
+    return [
+        Issue(
+            "warning",
+            "app-example-files",
+            f"Missing recommended file: {name}",
+            "Add it so the example documents what it does and what it needs.",
+        )
+        for name in ("README.md", ".env.example")
+        if not (recipe_dir / name).exists()
     ]
 
 
@@ -489,18 +533,26 @@ def check_emoji(recipe_dir: Path) -> list[Issue]:
 
 
 def validate_recipe(recipe_dir: Path) -> list[Issue]:
-    """Run all checks on a recipe directory and return aggregated issues.
+    """Run the applicable checks on an example directory.
 
-    Runs check functions in the order defined in CONTRIBUTING.md:
-    required-files → gitignore → requirements → secrets →
-    notebook-structure → no-emoji.
+    Secret scanning applies to every example without exception. The
+    notebook-recipe structure rules from CONTRIBUTING.md apply only where they
+    are meaningful: an app-style example (Next.js, Flask, Streamlit) has no
+    notebook and no sample_data/outputs directories, so requiring them would
+    report false positives rather than real problems.
+
+    Check order follows CONTRIBUTING.md: required-files → gitignore →
+    requirements → secrets → notebook-structure → no-emoji.
 
     Args:
-        recipe_dir: Absolute or relative path to the recipe directory.
+        recipe_dir: Absolute or relative path to the example directory.
 
     Returns:
-        Combined list of Issues from all check functions.
+        Combined list of Issues from the checks that apply.
     """
+    if is_app_example(recipe_dir):
+        return check_app_example_files(recipe_dir) + check_secrets(recipe_dir)
+
     return (
         check_required_files(recipe_dir)
         + check_gitignore(recipe_dir)

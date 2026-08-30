@@ -78,20 +78,52 @@ LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 # ---------------------------------------------------------------------------
 
 
-def is_recipe_directory(path: Path) -> bool:
-    """Return True for notebook recipe dirs under examples/ (not app-style examples).
+def is_example_directory(path: Path) -> bool:
+    """Return True for any example directory under examples/.
 
-    Apps may include `.env.example` but lack a main `.ipynb`; those are excluded.
+    Membership only. This deliberately does not inspect the directory's
+    contents: the checks a directory fails are exactly the checks that should
+    report on it, so using file presence as the entry condition makes those
+    checks unable to fire. `.env.example` in particular is itself a required
+    file, so gating on it meant a recipe missing one was never examined.
     """
     if path.parent.name != "examples" or not path.is_dir():
         return False
-    if path.name in LEGACY_EXAMPLE_DIRS:
+    return path.name not in LEGACY_EXAMPLE_DIRS
+
+
+def is_notebook_recipe(path: Path) -> bool:
+    """Return True for a directory that ships a notebook.
+
+    Selects which checks apply, not whether the directory is checked at all —
+    deliberately independent of where the directory sits, so the two decisions
+    stay separable. App-style examples (Next.js, Flask, Streamlit) have no
+    notebook and no sample_data/outputs, so the notebook-recipe structure rules
+    in CONTRIBUTING.md do not apply to them; the universal checks still do.
+    """
+    return path.is_dir() and any(path.glob("*.ipynb"))
+
+
+# Files that positively identify an app-style example. Membership must be
+# proven, never inferred from absence: "no notebook" alone would let a recipe
+# escape the structure rules simply by deleting its notebook.
+_APP_EVIDENCE = ("package.json", "*.py", "*.ts", "*.tsx", "*.js", "*.jsx")
+
+
+def is_app_example(path: Path) -> bool:
+    """Return True for an example that is an application rather than a notebook.
+
+    Requires positive evidence — application source somewhere in the tree — so
+    that an incomplete recipe is still held to the recipe standard instead of
+    being silently reclassified as an app.
+    """
+    if not path.is_dir() or is_notebook_recipe(path):
         return False
-    if " " in path.name:
-        return False
-    if not (path / ".env.example").exists():
-        return False
-    return any(path.glob("*.ipynb"))
+    return any(
+        p.is_file() and "__pycache__" not in p.parts
+        for pattern in _APP_EVIDENCE
+        for p in path.rglob(pattern)
+    )
 
 
 def example_dir_for_file(file_path: Path) -> Path | None:
