@@ -1,0 +1,64 @@
+name: "Bug report: example in this repo"
+description: "Report a problem with code, a notebook, or a recipe in this repository."
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug!
+
+        **Before you continue:** this repo only contains example code and notebooks for the Sarvam AI API. If your issue is actually about the **Indus app**, **Creator Studio**, the **Sarvam API/product itself**, or your **account/billing**, please close this and use the links on the "New issue" chooser page instead — a maintainer here can't fix those from this repository.
+
+  - type: input
+    id: example-path
+    attributes:
+      label: Which example, notebook, or script?
+      description: "Path in the repo, e.g. examples/Realtime_Speech_Captioning/app.py"
+      placeholder: "examples/.../..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: "Describe the bug. Include the exact error message if there is one, and which model/endpoint you were calling."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: "Minimal steps so a maintainer can reproduce it."
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: "Python version, OS, and sarvamai SDK version if relevant."
+      placeholder: "e.g. Python 3.11, macOS, sarvamai==x.y.z"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: "This is about example code in this repository — not the Indus app, Creator Studio, or the Sarvam API/product itself."
+          required: true

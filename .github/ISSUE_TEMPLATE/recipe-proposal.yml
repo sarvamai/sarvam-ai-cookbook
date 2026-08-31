@@ -1,0 +1,59 @@
+name: "Recipe / example proposal"
+description: "Propose a new notebook, script, or end-to-end example for the cookbook."
+title: "[Recipe]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for a new example that would help other developers? Tell us about it here. If you'd like to build it yourself, say so below — see CONTRIBUTING.md for the template and structure to use.
+
+  - type: input
+    id: recipe-name
+    attributes:
+      label: Proposed recipe name
+      placeholder: "e.g. Streaming chat example for Sarvam API"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-area
+    attributes:
+      label: Which Sarvam API area does this cover?
+      multiple: true
+      options:
+        - Chat completions
+        - Speech to text
+        - Text to speech
+        - Translation
+        - Transliteration
+        - Language identification
+        - Document intelligence
+        - Other / multiple
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What would this recipe demonstrate?
+      description: "A short description of the use case and what a developer would learn from it."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would this be useful to other developers?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: "I'm willing to submit a PR for this myself."
+          required: false
+        - label: "I've read CONTRIBUTING.md."
+          required: true

@@ -1,0 +1,19 @@
+# Placeholder contact links — see issue #149.
+# Each url below currently points at #149 as an interim placeholder.
+# Replace with the real destinations once the team confirms them, then
+# delete this comment block.
+
+blank_issues_enabled: false
+contact_links:
+  - name: 🐛 Bug in the Indus app
+    url: https://github.com/sarvamai/sarvam-ai-cookbook/issues/149
+    about: "This repo only covers example code, not the Indus app. (Placeholder link — see #149.)"
+  - name: 🎬 Bug in Creator Studio
+    url: https://github.com/sarvamai/sarvam-ai-cookbook/issues/149
+    about: "This repo only covers example code, not Creator Studio. (Placeholder link — see #149.)"
+  - name: ⚙️ Sarvam API, product, or account issue
+    url: https://github.com/sarvamai/sarvam-ai-cookbook/issues/149
+    about: "For API behavior, billing, or account/dashboard issues, not this repo's example code. (Placeholder link — see #149.)"
+  - name: 📚 Sarvam AI documentation
+    url: https://docs.sarvam.ai
+    about: "General docs and API reference."
