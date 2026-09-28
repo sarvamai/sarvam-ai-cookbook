@@ -65,10 +65,14 @@ pip install -r requirements.txt
 
 ### 3. Add Sarvam AI API key
 
-Open app.py
+
+cp .env.example .env
 
 
-SARVAMAI_API_KEY = "your_api_key_here"
+Open .env and set your key:
+
+
+SARVAM_API_KEY=your-sarvam-api-key
 
 
 ---
@@ -142,8 +146,8 @@ Use environment variables in production.
 
 
 flask
-requests
 sarvamai
+python-dotenv
 
 
 ---

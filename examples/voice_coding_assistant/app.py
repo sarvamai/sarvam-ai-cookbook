@@ -1,8 +1,12 @@
 import os
 import re
-import requests
+import tempfile
+
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 from sarvamai import SarvamAI
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -10,13 +14,16 @@ app = Flask(__name__)
 # CONFIG
 # =============================
 
-SARVAMAI_API_KEY = "YOUR_SARVAMAI_API_KEY"
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+
+if not SARVAM_API_KEY:
+    raise RuntimeError(
+        "SARVAM_API_KEY is not set. Copy .env.example to .env and add your key."
+    )
 
 client = SarvamAI(
-    api_subscription_key=SARVAMAI_API_KEY
+    api_subscription_key=SARVAM_API_KEY
 )
-
-SARVAM_CHAT_URL = "https://api.sarvam.ai/v1/chat/completions"
 
 
 # =============================
@@ -80,14 +87,19 @@ def speech_to_text():
 
         audio_file = request.files["audio"]
 
-        with open("temp.wav", "wb") as f:
-            f.write(audio_file.read())
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(audio_file.read())
+            tmp_path = tmp.name
 
-        response = client.speech_to_text.transcribe(
-            file=open("temp.wav", "rb"),
-            model="saaras:v3",
-            mode="transcribe"
-        )
+        try:
+            with open(tmp_path, "rb") as f:
+                response = client.speech_to_text.transcribe(
+                    file=f,
+                    model="saaras:v3",
+                    mode="transcribe"
+                )
+        finally:
+            os.remove(tmp_path)
 
         return jsonify({
             "text": response.transcript
@@ -118,11 +130,6 @@ def generate_code():
 
         language = detect_language(prompt)
 
-        headers = {
-            "Authorization": f"Bearer {SARVAMAI_API_KEY}",
-            "Content-Type": "application/json"
-        }
-
         system_prompt = f"""
 You are a strict code generation engine.
 
@@ -140,9 +147,9 @@ If user asks theory, convert to practical {language} code example.
 Output code only.
 """
 
-        payload = {
-            "model": "sarvam-m",
-            "messages": [
+        response = client.chat.completions(
+            model="sarvam-105b",
+            messages=[
                 {
                     "role": "system",
                     "content": system_prompt
@@ -152,28 +159,17 @@ Output code only.
                     "content": prompt
                 }
             ],
-            "temperature": 0.1,
-            "max_tokens": 2000,
-            "top_p": 0.9
-        }
-
-        response = requests.post(
-            SARVAM_CHAT_URL,
-            headers=headers,
-            json=payload,
-            timeout=60
+            temperature=0.1,
+            max_tokens=2000,
+            top_p=0.9
         )
 
-        result = response.json()
-
-        print("Sarvam response:", result)
-
-        if "choices" not in result:
+        if not response.choices:
             return jsonify({
                 "code": "Error generating code"
             }), 500
 
-        code = result["choices"][0]["message"]["content"]
+        code = response.choices[0].message.content
 
         code = clean_code(code)
 
