@@ -356,6 +356,40 @@ class TestSecrets:
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
 
+    def test_bom_notebook_with_hardcoded_key_flagged(self, tmp_path: Path) -> None:
+        # A UTF-8 BOM must not make json.loads fail and skip the secret scan.
+        d = _make_recipe(tmp_path, "my-recipe")
+        nb_path = d / "my_recipe.ipynb"
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        nb["cells"].append({
+            "cell_type": "code",
+            "source": ['SARVAM_API_KEY = "sk-real-api-key-12345678901234"\n'],
+            "metadata": {},
+            "outputs": [],
+            "execution_count": None,
+        })
+        nb_path.write_text(json.dumps(nb), encoding="utf-8-sig")
+        errors = _errors(check_secrets(d))
+        assert any(
+            i.check == "secrets" and "hardcoded API key" in i.message for i in errors
+        )
+
+    def test_bom_notebook_without_key_is_clean(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        nb_path = d / "my_recipe.ipynb"
+        body = nb_path.read_bytes()
+        nb_path.write_bytes(b"\xef\xbb\xbf" + body)
+        assert not _errors(check_secrets(d))
+
+    def test_unparseable_notebook_fails_secret_scan(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / "notes.ipynb").write_text("{not valid json{{{", encoding="utf-8")
+        errors = _errors(check_secrets(d))
+        assert any(
+            i.check == "secrets" and "Cannot parse notebook JSON: notes.ipynb" in i.message
+            for i in errors
+        )
+
     def test_env_example_with_placeholder_not_flagged(self, tmp_path: Path) -> None:
         # YOUR_SARVAM_API_KEY is a known placeholder; must not trigger.
         d = _make_recipe(tmp_path)
