@@ -42,6 +42,41 @@ SECRET_ASSIGNMENT_RE = re.compile(
 
 SARVAM_KEY_PREFIX_RE = re.compile(r"\bsk_[a-zA-Z0-9]{16,}\b")
 
+# Static fallback patterns for deprecated Sarvam API usage.
+# Derived from scripts/sarvam_api_rules.json (synced from docs.sarvam.ai).
+# Prefer scan_added_lines_for_allowlist() which reads the live rules JSON;
+# this constant is used by scan_added_lines_for_deprecated_api as a last resort.
+# Format: (compiled_regex, human_readable_message, check_name)
+# Order matters: more specific patterns (saarika:v2.5) precede the general
+# saarika:v2 pattern, which uses a negative lookahead to avoid matching v2.5.
+DEPRECATED_API_RULES: list[tuple[re.Pattern[str], str, str]] = [
+    (
+        re.compile(r"saarika:v2\.5", re.IGNORECASE),
+        "saarika:v2.5 is deprecated; use saaras:v3",
+        "deprecated-model",
+    ),
+    (
+        re.compile(r"saarika:v2(?![.\d])", re.IGNORECASE),
+        "saarika:v2 is deprecated; use saaras:v3",
+        "deprecated-model",
+    ),
+    (
+        re.compile(r"\bsarvam-m\b", re.IGNORECASE),
+        "sarvam-m is deprecated; use sarvam-105b",
+        "deprecated-model",
+    ),
+    (
+        re.compile(r"\bsarvam-30b\b", re.IGNORECASE),
+        "sarvam-30b is deprecated; use sarvam-105b",
+        "deprecated-model",
+    ),
+    (
+        re.compile(r"\bbulbul:v2(?![.\d])", re.IGNORECASE),
+        "bulbul:v2 is deprecated; use bulbul:v3",
+        "deprecated-model",
+    ),
+]
+
 PLACEHOLDER_KEY_PATTERNS = (
     "your-sarvam-api-key",
     "your_sarvam_api_key",

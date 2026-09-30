@@ -53,17 +53,23 @@ _REQUIRED_GITIGNORE_PATTERNS: list[str] = [".env", "sample_data/*", "outputs/*"]
 _MIN_SARVAMAI_VERSION = Version("0.1.24")
 _MIN_PILLOW_VERSION = Version("12.1.1")
 
+# Secret detection regexes — must stay in sync with sarvam_checks.py:
+#   SECRET_ASSIGNMENT_RE and SARVAM_KEY_PREFIX_RE
 # Matches hardcoded keys of the form:
 #   SARVAM_API_KEY = "real-value"   or   api_subscription_key="real-value"
+#   api-subscription-key="real-value"
 # Does NOT match:
-#   YOUR_SARVAM_API_KEY, your_key, <your …>, your-key (placeholder patterns)
+#   YOUR_SARVAM_API_KEY, your_key, your_sarvam, real-value, <your …> (placeholder patterns)
 #   Unquoted references such as api_subscription_key=SARVAM_API_KEY
 #   os.environ.get(...) assignments
-_SECRET_RE = re.compile(
-    r"(?:SARVAM_API_KEY|api_subscription_key)\s*=\s*"
-    r"""[\"'](?!YOUR_SARVAM|your_key|<your|your-key)[^\"']{10,}[\"']""",
+SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?:SARVAM_API_KEY|api[_-]?subscription[_-]?key)\s*=\s*"
+    r"""[\"'](?!YOUR_SARVAM|your[_-]?key|<your|your-key|your_sarvam|real-value)[^\"']{10,}[\"']""",
     re.IGNORECASE,
 )
+
+# Sarvam API keys are issued with an "sk_" prefix (32+ chars after sk_).
+SARVAM_KEY_PREFIX_RE = re.compile(r"\bsk_[a-zA-Z0-9]{16,}\b")
 
 # Unicode blocks that cover the overwhelming majority of emoji characters.
 # Deliberately excludes Devanagari, Tamil, and other Indic script blocks so
@@ -309,14 +315,15 @@ def check_secrets(recipe_dir: Path) -> list[Issue]:
             if cells is None:
                 continue
             for cell in cells:
-                if _SECRET_RE.search(_cell_source(cell)):
+                src = _cell_source(cell)
+                if SECRET_ASSIGNMENT_RE.search(src) or SARVAM_KEY_PREFIX_RE.search(src):
                     issues.append(Issue(
                         "error", "secrets",
                         f"Possible hardcoded API key in notebook: {rel}",
                         "Remove the key and load it via os.environ or python-dotenv instead.",
                     ))
                     break  # one error per notebook is sufficient
-        elif _SECRET_RE.search(text):
+        elif SECRET_ASSIGNMENT_RE.search(text) or SARVAM_KEY_PREFIX_RE.search(text):
             issues.append(Issue(
                 "error", "secrets",
                 f"Possible hardcoded API key in: {rel}",
