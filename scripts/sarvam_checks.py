@@ -51,6 +51,32 @@ PLACEHOLDER_KEY_PATTERNS = (
     "<your",
 )
 
+# Paths docs.sarvam.ai marks legacy. Matched against added lines only.
+# speech-to-text/ws is the older streaming socket; speech-to-text-realtime/ws
+# does not contain that substring and must stay unflagged.
+DEPRECATED_API_RULES: list[tuple[re.Pattern[str], str, str]] = [
+    (
+        re.compile(r"speech-to-text-translate"),
+        "Legacy /speech-to-text-translate endpoint. Use /speech-to-text with saaras:v3 and mode='translate'.",
+        "deprecated-api",
+    ),
+    (
+        re.compile(r"speech-to-text/ws(?![\w-])"),
+        "Legacy streaming WebSocket /speech-to-text/ws. New voice-agent work uses wss://api.sarvam.ai/speech-to-text-realtime/ws.",
+        "deprecated-api",
+    ),
+    (
+        re.compile(r"/document-intelligence\b|document_intelligence"),
+        "Legacy Document Intelligence API. Use Document AI at /doc-ai/v1.",
+        "deprecated-api",
+    ),
+    (
+        re.compile(r"speech-to-text/job(?!/v\d)"),
+        "Unversioned batch STT path. Use /speech-to-text/job/v1.",
+        "deprecated-api",
+    ),
+]
+
 BINARY_SUFFIXES: frozenset[str] = frozenset(
     {
         ".png",
