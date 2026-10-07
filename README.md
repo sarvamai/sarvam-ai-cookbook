@@ -85,6 +85,7 @@ Most notebooks and scripts are written in Python 3.9+, but the underlying API ca
 
 | Integration | Description |
 |---|---|
+| [Bolna](integrations/build_voice_agent_with_bolna.ipynb) | Multilingual phone voice agent using Sarvam speech models on Bolna |
 | [LiveKit](integrations/build_voice_agent_with_livekit.ipynb) | Real-time multilingual voice agent over WebRTC |
 | [Pipecat](integrations/build_voice_agent_with_pipecat.ipynb) | Voice agent pipeline with Daily or browser WebRTC transport |
 | [Twilio](integrations/build_voice_agent_with_twilio.ipynb) | Phone voice agent over Twilio Media Streams |
