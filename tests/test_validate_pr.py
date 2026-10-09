@@ -4,13 +4,17 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from sarvam_checks import (  # noqa: E402
     is_recipe_directory,
     notebook_cell_sources,
+    scan_added_lines_for_deprecated_api,
     scan_text_for_secrets,
 )
+import validate_pr as vp  # noqa: E402
 
 
 class TestSecretScanning:
@@ -63,3 +67,197 @@ class TestNotebookCellSources:
         nb_path.write_bytes(b"\xef\xbb\xbf" + content.encode("utf-8"))
         sources = notebook_cell_sources(nb_path)
         assert sources == ['model = "sarvam-m"']
+
+
+# ---------------------------------------------------------------------------
+# TestDeprecatedApiScanning
+# ---------------------------------------------------------------------------
+
+
+class TestDeprecatedApiScanning:
+    def test_deprecated_model_sarvam_m_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, 'model = "sarvam-m"')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and "sarvam-m" in i.message for i in issues)
+
+    def test_deprecated_model_sarvam_30b_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(3, 'chat = sarvam.chat.create(model="sarvam-30b", messages=[])')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and "sarvam-30b" in i.message for i in issues)
+
+    def test_deprecated_stt_model_saarika_v2_5_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(8, 'stt = sarvam.speech_to_text.transcribe(model="saarika:v2.5", file=f)')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and "saarika:v2.5" in i.message for i in issues)
+
+    def test_deprecated_stt_model_saarika_v2_without_suffix_flagged(self) -> None:
+        # 'saarika:v2' must be flagged but must NOT double-match 'saarika:v2.5'.
+        issues_v2 = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(8, 'model="saarika:v2"')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and "saarika:v2" in i.message for i in issues_v2)
+
+        issues_v2_5 = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(8, 'model="saarika:v2.5"')],
+            strict=True,
+        )
+        # Should match saarika:v2.5 exactly, not the bare saarika:v2 message.
+        assert any("saarika:v2.5" in i.message for i in issues_v2_5)
+        assert not any("saarika:v2 is" in i.message for i in issues_v2_5)
+
+    def test_deprecated_tts_model_bulbul_v2_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(4, 'tts = sarvam.text_to_speech(model="bulbul:v2", text="hello")')],
+            strict=True,
+        )
+        assert any(i.check == "deprecated-model" and "bulbul:v2" in i.message for i in issues)
+
+    def test_recommended_model_not_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, 'model = "sarvam-105b"')],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_non_sarvam_model_not_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, 'model = "gpt-4"')],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_strict_false_produces_warnings(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, 'model = "sarvam-m"')],
+            strict=False,
+        )
+        assert all(i.severity == "warning" for i in issues)
+        assert any(i.check == "deprecated-model" for i in issues)
+
+    def test_comment_lines_skipped(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, '# model = "sarvam-m"  # deprecated but commented')],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_blank_lines_skipped(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(5, "   "), (6, "")],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_re_compile_lines_skipped(self) -> None:
+        # Lines defining the patterns themselves must not trigger false positives.
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(1, "DEPRECATED_API_RULES = [(re.compile('sarvam-m'), ...)]")],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_empty_added_lines_returns_empty(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [],
+            strict=True,
+        )
+        assert issues == []
+
+    def test_line_number_in_message(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("examples/new-recipe/app.py"),
+            [(42, 'model = "sarvam-m"')],
+            strict=True,
+        )
+        assert any("42" in i.message for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# TestValidatePrAllowlistWiring
+# ---------------------------------------------------------------------------
+
+
+class TestValidatePrAllowlistWiring:
+    """Integration tests verifying validate_pr_with_refs wires in allowlist scanning."""
+
+    def test_deprecated_model_flagged_as_warning_default(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(5, 'model = "sarvam-m"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=False)
+        assert any(i.check == "deprecated-model" and i.severity == "warning" for i in issues)
+
+    def test_deprecated_model_flagged_as_error_in_strict(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(3, 'model = "sarvam-30b"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
+
+    def test_recommended_model_produces_no_allowlist_findings(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text('pass\n', encoding="utf-8")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/app.py"])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(5, 'model = "sarvam-105b"')])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
+
+    def test_binary_file_skips_allowlist_scan(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        recipe = tmp_path / "examples" / "test-recipe"
+        recipe.mkdir(parents=True)
+        (recipe / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: ["examples/test-recipe/image.png"])
+        monkeypatch.setattr(vp, "scan_file_for_secrets", lambda f, r: [])
+        monkeypatch.setattr(vp, "scan_file_for_client_side_keys", lambda f: [])
+        monkeypatch.setattr(vp, "git_diff_added_lines", lambda b, p, h: [(1, 'garbage')])
+
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert not any(i.check in {"deprecated-model", "unknown-model"} for i in issues)
+
+    def test_no_changed_files_returns_empty(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(vp, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(vp, "git_diff_name_only", lambda b, h: [])
+        issues = vp.validate_pr_with_refs("main", strict=True)
+        assert issues == []
