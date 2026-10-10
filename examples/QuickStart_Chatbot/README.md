@@ -1,11 +1,11 @@
 # Basic Chatbot
 
-A simple, single-turn chatbot that demonstrates how to use the Sarvam AI Chat Completions API.
+A simple command-line chatbot that keeps the conversation history and demonstrates how to use the Sarvam AI Chat Completions API.
 
 ## Features
 
-- Takes a user's question as input.
-- Sends the question to the Sarvam AI API.
+- Takes the user's questions as input in a chat loop.
+- Sends the full conversation history to the Sarvam AI API, so the bot remembers context.
 - Prints the model's response.
 
 ## Getting Started
@@ -34,3 +34,4 @@ Run the chatbot with your Sarvam API key:
 
 ```bash
 python chatbot.py --api-key YOUR_API_KEY
+```
