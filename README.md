@@ -71,7 +71,7 @@ Most notebooks and scripts are written in Python 3.9+, but the underlying API ca
 | [Live Video Transcription](examples/Live_Video_Transcription/) | Real-time transcription and translation of video audio over WebSocket |
 | [Multilingual Chatbot](examples/Multilingual_Chatbot/) | Chatbot with context preservation and translation fallback across English and Indian languages |
 | [Multilingual Feedback Analyzer](examples/Multilingual_Customer_Feedback_Analyzer/) | Detects language, translates, and analyzes sentiment in customer feedback |
-| [QuickStart Chatbot](examples/QuickStart_Chatbot/) | Minimal single-turn chatbot built on the Chat Completions API |
+| [QuickStart Chatbot](examples/QuickStart_Chatbot/) | Minimal command-line chatbot with conversation history built on the Chat Completions API |
 | [Realtime Speech Captioning](examples/Realtime_Speech_Captioning/) | Live captions from streaming speech to text over WebSocket |
 | [Regional Code Helper](examples/Regional_Code_Helper/) | Coding assistant that explains and debugs code in Indian languages |
 | [Regional Doubt Solver](examples/Regional_Doubt_Solver/) | Homework helper with automatic language detection and age-appropriate explanations |
