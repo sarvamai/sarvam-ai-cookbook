@@ -8,6 +8,8 @@ Usage:
 Runs on changed files under examples/ and getting-started/:
   - Secret / API key leak detection (blocking)
   - Client-side API key references (blocking)
+  - Deprecated / unknown Sarvam model and language-code usage in added lines
+    (non-blocking warnings by default; escalates to errors with --strict)
 
 Recipe structure is validated separately for new kebab-case recipe dirs.
 See scripts/sarvam_api_rules.json for current Sarvam models (reference only).
@@ -23,9 +25,12 @@ from pathlib import Path
 
 from sarvam_checks import (
     Issue,
+    git_diff_added_lines,
     git_diff_name_only,
+    scan_added_lines_for_allowlist,
     scan_file_for_client_side_keys,
     scan_file_for_secrets,
+    should_scan_file,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -41,8 +46,26 @@ def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     return paths
 
 
-def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
-    """Run PR-scoped secret checks between base_ref and head_ref."""
+def validate_pr_with_refs(
+    base_ref: str, head_ref: str = "HEAD", *, strict: bool = False
+) -> list[Issue]:
+    """Run PR-scoped security and Sarvam API compliance checks.
+
+    Scans changed files under examples/ and getting-started/ for:
+    - Hardcoded secrets / API keys (blocking errors)
+    - Client-side key references (blocking errors)
+    - Deprecated or unknown Sarvam models / invalid language codes in newly
+      added lines (warnings by default; errors when *strict* is True)
+
+    Args:
+        base_ref: Git base branch ref to diff against.
+        head_ref:  Git head ref to compare (default: HEAD).
+        strict:    When True, deprecated/unknown model findings are errors;
+                   otherwise they are warnings.
+
+    Returns:
+        List of Issue objects from all scans.
+    """
     issues: list[Issue] = []
     changed = changed_paths(base_ref, head_ref)
     if not changed:
@@ -57,12 +80,20 @@ def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
         issues.extend(scan_file_for_secrets(full, REPO_ROOT))
         issues.extend(scan_file_for_client_side_keys(full))
 
+        # Validate Sarvam model names and language codes in newly added lines.
+        # Only scan text-like files (skip binaries, .gitkeep, etc.).
+        if not should_scan_file(full):
+            continue
+        added = git_diff_added_lines(base_ref, str(rel), head_ref)
+        if added:
+            issues.extend(scan_added_lines_for_allowlist(full, added, strict=strict))
+
     return issues
 
 
-def validate_pr(base_ref: str) -> list[Issue]:
-    """Run PR-scoped secret checks on changed files."""
-    return validate_pr_with_refs(base_ref, "HEAD")
+def validate_pr(base_ref: str, *, strict: bool = False) -> list[Issue]:
+    """Run PR-scoped security and API compliance checks on changed files."""
+    return validate_pr_with_refs(base_ref, "HEAD", strict=strict)
 
 
 def main() -> int:
@@ -77,7 +108,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Treat warnings as errors.",
+        help="Treat warnings as errors and escalate deprecated-model findings to errors.",
     )
     parser.add_argument(
         "--json",
@@ -86,7 +117,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    issues = validate_pr(args.base_ref)
+    issues = validate_pr(args.base_ref, strict=args.strict)
     errors = [i for i in issues if i.severity == "error"]
     warnings = [i for i in issues if i.severity == "warning"]
 

@@ -396,6 +396,56 @@ class TestSecrets:
         (d / "sample_data" / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 100)
         assert not _errors(check_secrets(d))
 
+    def test_sk_prefix_key_in_python_file_flagged(self, tmp_path: Path) -> None:
+        # SARVAM_KEY_PREFIX_RE catches bare sk_ keys that SECRET_ASSIGNMENT_RE
+        # does not (e.g. assigned to a differently-named variable).
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'api_key = "sk_abcdefghijklmnopqrst1234"\n',
+            encoding="utf-8",
+        )
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
+    def test_sk_prefix_key_in_notebook_cell_flagged(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path, "my-recipe")
+        nb_path = d / "my_recipe.ipynb"
+        nb = json.loads(nb_path.read_text())
+        nb["cells"].append({
+            "cell_type": "code",
+            "source": ['token = "sk_abcdefghijklmnopqrst1234"\n'],
+            "metadata": {},
+            "outputs": [],
+            "execution_count": None,
+        })
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
+    def test_short_sk_prefix_not_flagged(self, tmp_path: Path) -> None:
+        # sk_ followed by fewer than 16 alphanumeric chars is not a real key.
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'token = "sk_short_value"\n', encoding="utf-8"
+        )
+        assert not _errors(check_secrets(d))
+
+    def test_hyphenated_subscription_key_flagged(self, tmp_path: Path) -> None:
+        # api-subscription-key (hyphen variant) is now caught by the flexible
+        # regex; the old _SECRET_RE only matched api_subscription_key.
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'api-subscription-key = "a-real-subscription-key-1234567890"\n',
+            encoding="utf-8",
+        )
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
+    def test_real_value_placeholder_not_flagged(self, tmp_path: Path) -> None:
+        # 'real-value' is a known placeholder; must not be a false positive.
+        d = _make_recipe(tmp_path)
+        (d / ".env.example").write_text(
+            'SARVAM_API_KEY = "real-value-here-123456"\n', encoding="utf-8"
+        )
+        assert not _errors(check_secrets(d))
+
 
 # ---------------------------------------------------------------------------
 # TestNotebookStructure
