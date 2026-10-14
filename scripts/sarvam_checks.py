@@ -226,7 +226,10 @@ def scan_text_for_secrets(text: str, rel_path: str) -> list[Issue]:
             Issue(
                 "error",
                 "secrets",
-                f"Possible hardcoded API key in {rel_path}: {snippet[:60]}",
+                # Never include the matched value. This message is rendered by
+                # scripts/pr_comment.py and posted to the PR, so the key would
+                # end up published in a public comment that outlives the commit.
+                f"Possible hardcoded API key in {rel_path}",
                 "Load SARVAM_API_KEY from the environment (.env + python-dotenv). "
                 "See https://docs.sarvam.ai/api-reference-docs/authentication",
             )
