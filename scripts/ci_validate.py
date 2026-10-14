@@ -12,12 +12,19 @@ import argparse
 import json
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from sarvam_checks import Issue, is_recipe_directory  # noqa: E402
+from sarvam_checks import (  # noqa: E402
+    GitDiffError,
+    Issue,
+    git_diff_issue,
+    git_failure_reason,
+    is_recipe_directory,
+)
 from validate_pr import validate_pr_with_refs  # noqa: E402
 from validate_recipe import validate_recipe  # noqa: E402
 
@@ -40,6 +47,7 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
             check=False,
         )
         if result.returncode != 0:
+            failure = git_failure_reason(result)
             continue
         dirs: set[str] = set()
         for path in result.stdout.splitlines():
@@ -49,7 +57,9 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
                 if is_recipe_directory(candidate):
                     dirs.add(f"examples/{parts[1]}")
         return sorted(Path(d) for d in dirs)
-    return []
+    raise GitDiffError(
+        f"could not diff origin/{base_ref}...{head_ref} or {base_ref}...{head_ref}: {failure}"
+    )
 
 
 def run_validation(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
@@ -67,7 +77,23 @@ def main() -> int:
     parser.add_argument("--output", help="Write JSON issues to this file")
     args = parser.parse_args()
 
-    issues = run_validation(args.base_ref, args.head_ref)
+    try:
+        issues = run_validation(args.base_ref, args.head_ref)
+    except GitDiffError as exc:
+        issues = [git_diff_issue(args.base_ref, exc)]
+    except Exception as exc:  # noqa: BLE001 - a crash must still reach the contributor
+        # Without this the run dies before writing --output, the comment step
+        # then fails on the missing file, and nobody is told what went wrong.
+        traceback.print_exc()
+        issues = [Issue(
+            "error",
+            "validator-crashed",
+            f"Validation stopped early: {type(exc).__name__}: {exc}. "
+            "The checks after this point did not run.",
+            "This is a bug in the validator, not necessarily in your PR. "
+            "Please report it with the run log attached.",
+        )]
+
     payload = [_issue_dict(i) for i in issues]
     errors = [i for i in issues if i.severity == "error"]
 

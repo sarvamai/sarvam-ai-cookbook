@@ -22,7 +22,9 @@ import sys
 from pathlib import Path
 
 from sarvam_checks import (
+    GitDiffError,
     Issue,
+    git_diff_issue,
     git_diff_name_only,
     scan_file_for_client_side_keys,
     scan_file_for_secrets,
@@ -86,7 +88,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    issues = validate_pr(args.base_ref)
+    try:
+        issues = validate_pr(args.base_ref)
+    except GitDiffError as exc:
+        issues = [git_diff_issue(args.base_ref, exc)]
+
     errors = [i for i in issues if i.severity == "error"]
     warnings = [i for i in issues if i.severity == "warning"]
 
