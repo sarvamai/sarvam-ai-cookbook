@@ -34,7 +34,7 @@ def _issue_dict(issue: Issue) -> dict:
 def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
-            ["git", "diff", "--name-only", ref_pair],
+            ["git", "-c", "core.quotePath=false", "diff", "--name-only", ref_pair],
             capture_output=True,
             text=True,
             check=False,
