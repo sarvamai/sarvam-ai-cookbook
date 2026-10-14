@@ -42,6 +42,19 @@ SECRET_ASSIGNMENT_RE = re.compile(
 
 SARVAM_KEY_PREFIX_RE = re.compile(r"\bsk_[a-zA-Z0-9]{16,}\b")
 
+DEPRECATED_API_RULES = [
+    (
+        re.compile(r"api\.sarvam\.ai/v1/translate"),
+        "The /v1/translate endpoint is deprecated. Use Mayura (v1) instead.",
+        "deprecated-api",
+    ),
+    (
+        re.compile(r"api\.sarvam\.ai/v1/speech-to-text-translate"),
+        "The /v1/speech-to-text-translate endpoint is deprecated. Use Saaras (v3) + Mayura (v1).",
+        "deprecated-api",
+    ),
+]
+
 PLACEHOLDER_KEY_PATTERNS = (
     "your-sarvam-api-key",
     "your_sarvam_api_key",
