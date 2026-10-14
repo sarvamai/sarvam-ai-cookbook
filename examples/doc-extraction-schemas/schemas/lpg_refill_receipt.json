@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "description": "A domestic LPG cylinder refill receipt or cash memo from an Indian gas distributor.",
+  "properties": {
+    "distributor_name": {
+      "type": "string",
+      "description": "Name of the gas agency printed in the letterhead."
+    },
+    "distributor_code": {
+      "type": "string",
+      "description": "The distributor code printed near the agency name."
+    },
+    "consumer_name": {
+      "type": "string",
+      "description": "Name of the registered consumer, printed in the customer block."
+    },
+    "consumer_number": {
+      "type": "string",
+      "description": "The LPG consumer number. Keep it as text so leading zeros survive."
+    },
+    "receipt_number": {
+      "type": "string",
+      "description": "The cash memo or receipt number for this refill."
+    },
+    "delivery_date": {
+      "type": "string",
+      "description": "The date of delivery, exactly as printed on the receipt."
+    },
+    "cylinder_type": {
+      "type": "string",
+      "description": "Which cylinder was delivered, as printed on the receipt.",
+      "enum": ["domestic_14_2kg", "domestic_5kg", "commercial_19kg"]
+    },
+    "cylinders_delivered": {
+      "type": "integer",
+      "description": "Number of cylinders delivered against this receipt."
+    },
+    "cylinder_number": {
+      "type": "string",
+      "description": "The serial number stamped on the delivered cylinder, where the receipt records it."
+    },
+    "cash_memo_amount": {
+      "type": "number",
+      "description": "The retail selling price charged for the refill, in rupees."
+    },
+    "delivery_charge": {
+      "type": "number",
+      "description": "Any separate delivery or establishment charge, in rupees."
+    },
+    "subsidy_amount": {
+      "type": "number",
+      "description": "The subsidy amount shown on the receipt, in rupees, where one is printed."
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Net amount paid by the consumer, in rupees."
+    },
+    "payment_mode": {
+      "type": "string",
+      "description": "How the refill was paid for, as printed on the receipt.",
+      "enum": ["cash", "upi", "card", "online_prepaid"]
+    },
+    "delivery_address": {
+      "type": "object",
+      "description": "The address the cylinder was delivered to, from the customer block.",
+      "properties": {
+        "line1": {
+          "type": "string",
+          "description": "House or door number and street, the first line of the printed address."
+        },
+        "locality": {
+          "type": "string",
+          "description": "Locality, village or area name from the printed address."
+        },
+        "district": {
+          "type": "string",
+          "description": "District or city name from the printed address."
+        },
+        "pin_code": {
+          "type": "string",
+          "description": "Six digit postal code. Keep it as text so leading zeros survive."
+        }
+      }
+    }
+  }
+}
