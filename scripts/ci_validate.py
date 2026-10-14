@@ -17,9 +17,18 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from sarvam_checks import Issue, is_recipe_directory  # noqa: E402
+from sarvam_checks import Issue  # noqa: E402
 from validate_pr import validate_pr_with_refs  # noqa: E402
 from validate_recipe import validate_recipe  # noqa: E402
+
+APP_STYLE_MARKERS = (
+    "package.json",
+    "app.py",
+    "main.py",
+    "server.py",
+    "frontend",
+    "backend",
+)
 
 
 def _issue_dict(issue: Issue) -> dict:
@@ -31,7 +40,13 @@ def _issue_dict(issue: Issue) -> dict:
     }
 
 
-def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
+def changed_example_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
+    """Return every changed top-level example directory except TEMPLATE.
+
+    Discovery is intentionally based only on path membership. Validation must
+    not require files such as .env.example or a notebook before a directory is
+    eligible to be checked, because those are themselves validation targets.
+    """
     for ref_pair in (f"origin/{base_ref}...{head_ref}", f"{base_ref}...{head_ref}"):
         result = subprocess.run(
             ["git", "diff", "--name-only", ref_pair],
@@ -41,22 +56,43 @@ def changed_recipe_dirs(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
         )
         if result.returncode != 0:
             continue
+
         dirs: set[str] = set()
         for path in result.stdout.splitlines():
             parts = path.strip().split("/")
             if len(parts) >= 2 and parts[0] == "examples" and parts[1] not in {"TEMPLATE", ""}:
-                candidate = REPO_ROOT / "examples" / parts[1]
-                if is_recipe_directory(candidate):
-                    dirs.add(f"examples/{parts[1]}")
+                dirs.add(f"examples/{parts[1]}")
         return sorted(Path(d) for d in dirs)
     return []
 
 
+def is_notebook_recipe_candidate(example_dir: Path) -> bool:
+    """Return True when notebook-specific recipe validation should apply.
+
+    Existing notebooks are always notebook recipes. Directories without a
+    notebook are treated as app-style only when they contain an explicit app
+    marker; otherwise they remain notebook-recipe candidates so a missing
+    notebook is reported instead of silently skipping validation.
+    """
+    if any(example_dir.glob("*.ipynb")):
+        return True
+    return not any((example_dir / marker).exists() for marker in APP_STYLE_MARKERS)
+
+
 def run_validation(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
     issues: list[Issue] = []
+
+    # PR-scoped security checks already apply to every changed file under
+    # examples/ and getting-started/, including app-style examples.
     issues.extend(validate_pr_with_refs(base_ref, head_ref))
-    for recipe_dir in changed_recipe_dirs(base_ref, head_ref):
-        issues.extend(validate_recipe(REPO_ROOT / recipe_dir))
+
+    # Notebook/template structure checks apply only to notebook recipes. The
+    # discovery step still sees every example directory, so missing required
+    # recipe files can no longer opt a notebook recipe out of validation.
+    for example_dir in changed_example_dirs(base_ref, head_ref):
+        full_dir = REPO_ROOT / example_dir
+        if is_notebook_recipe_candidate(full_dir):
+            issues.extend(validate_recipe(full_dir))
     return issues
 
 
