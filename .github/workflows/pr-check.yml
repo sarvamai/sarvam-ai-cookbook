@@ -10,6 +10,7 @@ on:
     paths:
       - "examples/**"
       - "getting-started/**"
+      - "integrations/**"
       - "scripts/**"
       - "tests/**"
       - "requirements-dev.txt"

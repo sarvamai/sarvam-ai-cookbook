@@ -70,6 +70,13 @@ BINARY_SUFFIXES: frozenset[str] = frozenset(
 
 SCAN_SKIP_NAMES = frozenset({".gitkeep", "package-lock.json"})
 
+# Committable templates. Every other .env* name holds real values.
+ENV_TEMPLATE_NAMES = frozenset({".env.example", ".env.sample", ".env.template"})
+
+# Notebook output mime types that hold text a key can hide in. Anything else
+# (image/png, application/pdf) is base64 and would only produce false positives.
+TEXTUAL_OUTPUT_MIME_PREFIXES = ("text/", "application/json")
+
 LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 
 
@@ -105,13 +112,25 @@ def example_dir_for_file(file_path: Path) -> Path | None:
     return None
 
 
+def is_committed_env_file(path: Path) -> bool:
+    """Return True for a real .env file, including .env.local / .env.production.
+
+    Template files (.env.example and friends) are meant to be committed, and
+    .envrc belongs to direnv rather than being an env file at all.
+    """
+    name = path.name
+    if name in ENV_TEMPLATE_NAMES:
+        return False
+    return name == ".env" or name.startswith(".env.")
+
+
 def should_scan_file(path: Path) -> bool:
     """Return True when a file should be scanned for secrets and API usage."""
     if not path.is_file():
         return False
     if path.name in SCAN_SKIP_NAMES:
         return False
-    if path.name == ".env":
+    if path.name.startswith(".env"):
         return True
     if path.suffix.lower() in BINARY_SUFFIXES:
         return False
@@ -129,6 +148,8 @@ def should_scan_file(path: Path) -> bool:
         ".toml",
         ".env.example",
         ".sh",
+        ".html",
+        ".htm",
     } or path.name in {".env.example", "Dockerfile"}
 
 
@@ -205,6 +226,42 @@ def notebook_cell_sources(nb_path: Path) -> list[str]:
     return sources
 
 
+def _joined_text(value: object) -> str:
+    """Flatten a notebook text field, which may be a list of lines or a string."""
+    if isinstance(value, list):
+        return "".join(str(part) for part in value)
+    return str(value) if value else ""
+
+
+def notebook_cell_outputs(nb_path: Path) -> list[str]:
+    """Return each cell's saved output text.
+
+    Executed notebooks are committed with their outputs intact, so a printed
+    key or an auth traceback lands on disk just like source code does.
+    """
+    try:
+        nb = json.loads(nb_path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+        return []
+
+    per_cell: list[str] = []
+    for cell in nb.get("cells", []):
+        parts: list[str] = []
+        for output in cell.get("outputs") or []:
+            if not isinstance(output, dict):
+                continue
+            parts.append(_joined_text(output.get("text")))
+            parts.append(_joined_text(output.get("evalue")))
+            parts.append(_joined_text(output.get("traceback")))
+            data = output.get("data")
+            if isinstance(data, dict):
+                for mime, payload in data.items():
+                    if str(mime).startswith(TEXTUAL_OUTPUT_MIME_PREFIXES):
+                        parts.append(_joined_text(payload))
+        per_cell.append("".join(part for part in parts if part))
+    return per_cell
+
+
 # ---------------------------------------------------------------------------
 # Check functions
 # ---------------------------------------------------------------------------
@@ -256,13 +313,13 @@ def scan_file_for_secrets(file_path: Path, repo_root: Path | None = None) -> lis
         else str(file_path)
     )
 
-    if file_path.name == ".env":
+    if is_committed_env_file(file_path):
         return [
             Issue(
                 "error",
                 "secrets",
-                f"Committed .env file: {rel}",
-                "Never commit .env. Add .env to .gitignore and provide .env.example instead.",
+                f"Committed {file_path.name} file: {rel}",
+                "Never commit a .env file. Add it to .gitignore and provide .env.example instead.",
             )
         ]
 
@@ -276,6 +333,8 @@ def scan_file_for_secrets(file_path: Path, repo_root: Path | None = None) -> lis
         for idx, cell_src in enumerate(notebook_cell_sources(file_path)):
             for issue in scan_text_for_secrets(cell_src, f"{rel} (cell {idx})"):
                 issues.append(issue)
+        for idx, cell_out in enumerate(notebook_cell_outputs(file_path)):
+            issues.extend(scan_text_for_secrets(cell_out, f"{rel} (cell {idx} output)"))
         return issues
 
     return scan_text_for_secrets(text, rel)
