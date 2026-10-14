@@ -378,6 +378,25 @@ class TestSecrets:
         )
         assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
 
+    def test_hyphenated_subscription_key_flagged(self, tmp_path: Path) -> None:
+        # api-subscription-key is the spelling of Sarvam's auth header, so it is
+        # what REST recipes write; a key hardcoded that way must still be caught.
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'api-subscription-key = "a-real-subscription-key-1234567890"\n',
+            encoding="utf-8",
+        )
+        assert any(i.check == "secrets" for i in _errors(check_secrets(d)))
+
+    def test_hyphenated_placeholder_not_flagged(self, tmp_path: Path) -> None:
+        # your-sarvam-api-key is the placeholder auto_fix() writes into
+        # .env.example; quoting it in a notebook or README is not a leak.
+        d = _make_recipe(tmp_path)
+        (d / "helper.py").write_text(
+            'SARVAM_API_KEY = "your-sarvam-api-key"\n', encoding="utf-8"
+        )
+        assert not _errors(check_secrets(d))
+
     def test_short_quoted_value_under_threshold_not_flagged(self, tmp_path: Path) -> None:
         # Values shorter than 10 characters cannot be real API keys.
         d = _make_recipe(tmp_path)
