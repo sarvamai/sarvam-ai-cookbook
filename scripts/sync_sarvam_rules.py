@@ -148,11 +148,14 @@ def main() -> int:
         print("sarvam_api_rules.json is up to date.")
         return 0
 
-    RULES_PATH.write_text(render_rules(rules), encoding="utf-8")
-    if args.verbose or changed:
-        print(f"Wrote {RULES_PATH} (changed={changed})")
-    else:
+    # synced_at is excluded from the fingerprint. Rewriting it on an otherwise
+    # unchanged file makes the weekly job open a timestamp-only pull request.
+    if not changed:
         print(f"{RULES_PATH} already current.")
+        return 0
+
+    RULES_PATH.write_text(render_rules(rules), encoding="utf-8")
+    print(f"Wrote {RULES_PATH} (changed={changed})")
     return 0
 
 

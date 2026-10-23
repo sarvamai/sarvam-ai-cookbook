@@ -121,3 +121,42 @@ class TestAllowlistValidation:
         path.write_text(json.dumps(stale, indent=2) + "\n")
         _, needs_sync = sync_rules()
         assert needs_sync is True
+
+    def test_write_leaves_timestamp_alone_when_content_matches(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rules = canonical_rules()
+        rules["synced_at"] = "2020-01-01T00:00:00Z"
+        path = tmp_path / "sarvam_api_rules.json"
+        original = json.dumps(rules, indent=2) + "\n"
+        path.write_text(original)
+        monkeypatch.setattr("sync_sarvam_rules.RULES_PATH", path)
+        monkeypatch.setattr(
+            "sync_sarvam_rules.verify_docs_reachable",
+            lambda timeout=10.0: (True, "https://docs.sarvam.ai"),
+        )
+        monkeypatch.setattr(sys, "argv", ["sync_sarvam_rules.py"])
+        from sync_sarvam_rules import main
+
+        assert main() == 0
+        assert path.read_text() == original
+
+    def test_write_replaces_file_when_model_list_changes(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rules = canonical_rules()
+        rules["models"]["chat"]["allowed"].append("sarvam-future")
+        path = tmp_path / "sarvam_api_rules.json"
+        path.write_text(json.dumps(rules, indent=2) + "\n")
+        monkeypatch.setattr("sync_sarvam_rules.RULES_PATH", path)
+        monkeypatch.setattr(
+            "sync_sarvam_rules.verify_docs_reachable",
+            lambda timeout=10.0: (True, "https://docs.sarvam.ai"),
+        )
+        monkeypatch.setattr(sys, "argv", ["sync_sarvam_rules.py"])
+        from sync_sarvam_rules import main
+
+        assert main() == 0
+        written = json.loads(path.read_text())
+        assert "sarvam-future" not in written["models"]["chat"]["allowed"]
+        assert "sarvam-105b" in written["models"]["chat"]["allowed"]

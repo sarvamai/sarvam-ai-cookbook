@@ -1,6 +1,8 @@
 name: PR Check
 
-# Validates contributor PRs and posts actionable comments on failure.
+# Validates contributor PRs and reports failures. The report always goes to the
+# step summary; it is additionally posted as a PR comment only when the token is
+# actually writable (see the note above the comment step).
 
 on:
   pull_request:
@@ -48,16 +50,31 @@ jobs:
           python scripts/ci_validate.py --base-ref "$BASE_REF" --output validation-results.json
         continue-on-error: true
 
-      - name: Post validation summary on failure
+      # Rendering and posting are deliberately separate steps: a crash in
+      # pr_comment.py must be distinguishable from a `gh` permission error.
+      # continue-on-error here so neither can mask the validation failure below.
+      - name: Render validation report
         if: steps.validate.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
         run: |
           python scripts/pr_comment.py \
             --input validation-results.json \
             --output pr-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --body-file pr-comment.md
+          cat pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      # `pull_request` runs from a fork get a read-only GITHUB_TOKEN no matter
+      # what `permissions:` requests, so commenting 403s for external
+      # contributors (issue #127). The step summary above needs no write token.
+      # Keep the comment only for same-repo PRs, where the grant is honoured.
+      - name: Comment on pull request
+        if: >-
+          steps.validate.outcome == 'failure' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr comment "$PR_NUMBER" --body-file pr-comment.md
 
       - name: Fail if validation failed
         if: steps.validate.outcome == 'failure'
