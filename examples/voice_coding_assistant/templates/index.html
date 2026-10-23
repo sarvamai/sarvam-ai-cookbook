@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarvam AI | Voice Coding Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg-dark: #02040a;
+            --panel-bg: rgba(13, 17, 23, 0.8);
+            --accent-blue: #2f81f7;
+            --accent-green: #238636;
+            --border-color: rgba(48, 54, 61, 0.8);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 10% 10%, rgba(47, 129, 247, 0.1), transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.08), transparent 40%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #e6edf3;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- Refined Wave Animation --- */
+        .bar {
+            width: 4px;
+            height: 12px;
+            background: var(--accent-blue);
+            border-radius: 4px;
+            animation: wave 0.8s infinite alternate ease-in-out;
+            box-shadow: 0 0 10px rgba(47, 129, 247, 0.3);
+        }
+
+        @keyframes wave {
+            from {
+                height: 8px;
+                opacity: 0.5;
+            }
+
+            to {
+                height: 24px;
+                opacity: 1;
+            }
+        }
+
+        .wave-inactive {
+            opacity: 0.2;
+        }
+
+        .wave-inactive .bar {
+            animation-play-state: paused;
+        }
+
+        /* --- Microphone Button --- */
+        .mic-button {
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            box-shadow: 0 10px 20px rgba(35, 134, 54, 0.2), inset 0 2px 5px rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .mic-button.recording {
+            background: linear-gradient(135deg, #da3633 0%, #f85149 100%);
+            box-shadow: 0 0 30px rgba(218, 54, 51, 0.4);
+            transform: scale(1.1);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            inset: -10px;
+            border: 2px solid rgba(47, 129, 247, 0.3);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .recording .pulse-ring {
+            animation: pulse 2s infinite;
+            opacity: 1;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* --- Terminal / VS Code UI --- */
+        .vscode-container {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .vscode-header {
+            background: rgba(22, 27, 34, 0.6);
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vscode-code {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 20px;
+            color: #7ee787;
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 200px;
+        }
+
+        /* --- Inputs & Buttons --- */
+        .input-field {
+            background: rgba(1, 4, 9, 0.6);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.15);
+            outline: none;
+        }
+
+        .btn {
+            background: #21262d;
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #30363d;
+            border-color: #8b949e;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(47, 129, 247, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #4493f8;
+            box-shadow: 0 6px 15px rgba(47, 129, 247, 0.3);
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- Toast --- */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2f81f7;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="glass-panel w-full max-w-3xl rounded-3xl p-8 relative overflow-hidden">
+
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/5 blur-[100px] pointer-events-none">
+        </div>
+
+        <div class="flex justify-between items-start mb-10">
+            <div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">Sarvam <span
+                        class="text-blue-500 font-light">AI</span></h1>
+                <p class="text-[10px] text-blue-400/80 tracking-[0.3em] uppercase font-bold mt-1">Advanced Audio Core
+                </p>
+            </div>
+
+            <div id="wave"
+                class="flex items-end gap-1.5 h-10 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 wave-inactive">
+                <div class="bar"></div>
+                <div class="bar" style="animation-delay: 0.1s"></div>
+                <div class="bar" style="animation-delay: 0.2s"></div>
+                <div class="bar" style="animation-delay: 0.3s"></div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center mb-10 relative">
+            <button id="mic-button" onclick="toggleRecording()"
+                class="mic-button w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl z-10">
+                <div class="pulse-ring"></div>
+                <i id="mic-icon" class="fas fa-microphone"></i>
+            </button>
+
+            <div id="recording-indicator"
+                class="recording-indicator opacity-0 absolute -bottom-8 flex items-center gap-2 transition-all duration-300">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live Transcribing</span>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="relative group">
+                <textarea id="prompt"
+                    class="input-field w-full p-5 rounded-2xl text-slate-200 placeholder-slate-600 resize-none font-medium"
+                    rows="3" placeholder="Describe your logic... (e.g., 'Build a Python scraper for news')"></textarea>
+                <div class="absolute bottom-4 right-4 flex gap-2">
+                    <button onclick="clearPrompt()" class="btn px-4 py-2 rounded-xl text-xs flex items-center gap-2">
+                        <i class="fas fa-trash-alt text-slate-500"></i> Clear
+                    </button>
+                    <button onclick="generateCode()" id="generate-btn"
+                        class="btn-primary px-6 py-2 rounded-xl text-xs flex items-center gap-2 font-bold">
+                        <span class="button-text flex items-center gap-2">
+                            <i class="fas fa-sparkles text-[10px]"></i> Run Generation
+                        </span>
+                        <div class="loading-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="vscode-container transition-all duration-500">
+                <div class="vscode-header">
+                    <div class="flex gap-2 items-center">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                        <span class="filename ml-2 opacity-50 font-mono italic">script_output.py</span>
+                    </div>
+                    <button onclick="copyCode()"
+                        class="copy-btn px-2 py-1 hover:bg-white/5 rounded-md transition-colors">
+                        <i class="fas fa-copy mr-2"></i><span class="text-[10px] uppercase font-bold">Copy</span>
+                    </button>
+                </div>
+                <pre id="output"
+                    class="vscode-code scrollbar-hide overflow-auto italic opacity-40">Generated code will appear here...</pre>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center border-t border-white/5 pt-6">
+            <p class="text-[9px] text-slate-600 tracking-[0.5em] uppercase font-bold">
+                Enterprise Developer Preview
+            </p>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let generatedCode = "", isRecording = false, recognition = null;
+        if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+            const e = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new e;
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = "en-US";
+            recognition.onresult = function (e) {
+                let t = "";
+                for (let o = e.resultIndex; o < e.results.length; o++) e.results[o].isFinal && (t += e.results[o][0].transcript + " ");
+                if ("" !== t.trim()) document.getElementById("prompt").value += t;
+            };
+            recognition.onerror = function (e) {
+                if ("no-speech" !== e.error) showToast("Mic error: " + e.error);
+                stopRecording();
+            };
+            recognition.onend = function () { if (isRecording) recognition.start(); };
+        }
+
+        function toggleRecording() { isRecording ? stopRecording() : startRecording(); }
+
+        function startRecording() {
+            if (isRecording) return;
+            isRecording = true;
+            const btn = document.getElementById("mic-button");
+            btn.classList.add("recording");
+            document.getElementById("mic-icon").className = "fas fa-stop";
+            document.getElementById("recording-indicator").style.opacity = "1";
+            document.getElementById("wave").classList.replace("wave-inactive", "wave-active");
+            if (recognition) recognition.start();
+            showToast("Recording started");
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+            isRecording = false;
+            const btn = document.getElementById("mic-button");
+            btn.classList.remove("recording");
+            document.getElementById("mic-icon").className = "fas fa-microphone";
+            document.getElementById("recording-indicator").style.opacity = "0";
+            document.getElementById("wave").classList.replace("wave-active", "wave-inactive");
+            if (recognition) recognition.stop();
+            showToast("Recording stopped");
+        }
+
+        function clearPrompt() {
+            document.getElementById("prompt").value = "";
+            const output = document.getElementById("output");
+            output.textContent = "Generated code will appear here...";
+            output.classList.add("italic", "opacity-40");
+            showToast("Workspace Cleared");
+        }
+
+        function copyCode() {
+            const e = document.getElementById("output").textContent;
+            if (e && e !== "Generated code will appear here...") {
+                navigator.clipboard.writeText(e);
+                showToast("Code copied to clipboard");
+            }
+        }
+
+        function showToast(e) {
+            const t = document.getElementById("toast");
+            t.textContent = e;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2000);
+        }
+
+        async function generateCode() {
+            const e = document.getElementById("prompt").value.trim();
+            if (!e) return void showToast("Please describe what to build");
+            const t = document.getElementById("generate-btn");
+            const output = document.getElementById("output");
+
+            t.classList.add("generating");
+            t.querySelector(".loading-spinner").classList.remove("hidden");
+            t.querySelector(".button-text").classList.add("hidden");
+
+            output.classList.remove("italic", "opacity-40");
+            output.textContent = "/* Initializing Sarvam AI model...\n   Analyzing request context...\n   Generating secure code blocks... */";
+
+            try {
+                // Assuming your backend endpoint /generate-code exists
+                const o = await fetch("/generate-code", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: e })
+                });
+                if (!o.ok) throw new Error;
+                const n = await o.json();
+                generatedCode = n.code || "";
+                output.textContent = generatedCode;
+                showToast("Generation Complete");
+            } catch {
+                output.textContent = "# Error generating code. Check connection.";
+                showToast("Request failed");
+            } finally {
+                t.classList.remove("generating");
+                t.querySelector(".loading-spinner").classList.add("hidden");
+                t.querySelector(".button-text").classList.remove("hidden");
+            }
+        }
+    </script>
+</body>
+
+</html>
