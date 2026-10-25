@@ -2,7 +2,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Example code, guides, and end-to-end projects for building with the [Sarvam AI API](https://docs.sarvam.ai): chat completions, speech to text, text to speech, translation, transliteration, language identification, and document intelligence, all with first-class support for Indian languages.
+Example code, guides, and end-to-end projects for building with the [Sarvam AI API](https://docs.sarvam.ai): chat completions, speech to text, text to speech, translation, document translation, transliteration, language identification, and document intelligence, all with first-class support for Indian languages.
 
 ## Contents
 
@@ -37,7 +37,7 @@ Most notebooks and scripts are written in Python 3.9+, but the underlying API ca
 
 | Folder | Contents |
 |---|---|
-| [`getting-started/`](getting-started/) | Focused, single-API tutorial notebooks: chat, speech to text, text to speech, translation, transliteration, language identification, document intelligence |
+| [`getting-started/`](getting-started/) | Focused, single-API tutorial notebooks: chat, speech to text, text to speech, translation, document translation, transliteration, language identification, document intelligence |
 | [`examples/`](examples/) | Complete example projects and apps built on top of the Sarvam AI API |
 | [`integrations/`](integrations/) | Guides for using Sarvam AI with third-party frameworks and platforms |
 | [`scripts/`](scripts/) | CI validation tooling and the Sarvam model allowlist (`sarvam_api_rules.json`) |
@@ -57,6 +57,7 @@ Most notebooks and scripts are written in Python 3.9+, but the underlying API ca
 | Transliteration | [Transliterate_API_Tutorial.ipynb](getting-started/transliterate/Transliterate_API_Tutorial.ipynb) | Converting text between scripts while preserving pronunciation |
 | Language identification | [Language_Identification.ipynb](<getting-started/language identification/Language_Identification.ipynb>) | Detecting the language and script of input text |
 | Document intelligence | [Document_Intelligence.ipynb](getting-started/doc-intelligence/Document_Intelligence.ipynb) | Extracting structured data from documents with Sarvam Vision |
+| Document translation | [Document_Translation_API.ipynb](getting-started/document-translation/Document_Translation_API.ipynb) | Translating whole PDF and Office files with layout preserved (document-to-document) |
 
 ## Example projects
 
