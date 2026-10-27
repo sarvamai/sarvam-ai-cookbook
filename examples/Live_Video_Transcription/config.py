@@ -16,5 +16,5 @@ DEBUG = False
 API_LANGUAGE = "unknown"  # Options: "en-IN", "hi-IN", "unknown" (auto-detect)
 
 # Flask Configuration
-SECRET_KEY = "live_transcription_demo_secret_key"
-CORS_ALLOWED_ORIGINS = "*"
+SECRET_KEY = os.getenv("SECRET_KEY", "live_transcription_demo_secret_key")
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "*")
