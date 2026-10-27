@@ -10,5 +10,5 @@ HOST = "127.0.0.1"
 PORT = 5002
 DEBUG = False
 
-SECRET_KEY = "realtime_speech_captioning_secret_key"
-CORS_ALLOWED_ORIGINS = "*"
+SECRET_KEY = os.getenv("SECRET_KEY", "realtime_speech_captioning_secret_key")
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "*")
