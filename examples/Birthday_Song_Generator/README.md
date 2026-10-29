@@ -30,7 +30,7 @@ Built with:
 ##  Demo Screenshots – Birthday Song Generator
 
 ### 🧾 User Input Form
-![Input Form](./backend/screenshots/inputs.jpeg)
+![Input Form](./screenshots/inputs.png)
 
 ### 🎵 Generated Birthday Song Output
-![Song Output](./backend/screenshots/output.jpeg)
+![Song Output](./screenshots/output.png)
