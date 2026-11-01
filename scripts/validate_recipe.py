@@ -108,6 +108,9 @@ def _load_notebook_cells(nb_path: Path) -> list[dict] | None:
     """Parse a Jupyter notebook JSON file and return its cell list.
 
     Uses the stdlib json module; the notebook is never executed.
+    ``utf-8-sig`` strips a leading BOM so Windows-saved notebooks still parse.
+    A notebook that cannot be parsed returns None; callers must treat that as
+    a failure, not as an empty file.
 
     Args:
         nb_path: Path to the .ipynb file.
@@ -116,7 +119,7 @@ def _load_notebook_cells(nb_path: Path) -> list[dict] | None:
         List of cell dicts, or None if the file cannot be parsed.
     """
     try:
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        nb = json.loads(nb_path.read_text(encoding="utf-8-sig"))
         cells = nb.get("cells")
         return cells if isinstance(cells, list) else []
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
@@ -307,6 +310,11 @@ def check_secrets(recipe_dir: Path) -> list[Issue]:
         if fp.suffix == ".ipynb":
             cells = _load_notebook_cells(fp)
             if cells is None:
+                issues.append(Issue(
+                    "error", "secrets",
+                    f"Cannot parse notebook JSON: {rel}",
+                    "Fix the notebook so the secret scan can read it. An unreadable notebook is not treated as clean.",
+                ))
                 continue
             for cell in cells:
                 if _SECRET_RE.search(_cell_source(cell)):
