@@ -6,9 +6,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+import validate_pr  # noqa: E402
 from sarvam_checks import (  # noqa: E402
     is_recipe_directory,
     notebook_cell_sources,
+    scan_added_lines_for_deprecated_api,
     scan_text_for_secrets,
 )
 
@@ -63,3 +65,94 @@ class TestNotebookCellSources:
         nb_path.write_bytes(b"\xef\xbb\xbf" + content.encode("utf-8"))
         sources = notebook_cell_sources(nb_path)
         assert sources == ['model = "sarvam-m"']
+
+
+class TestDeprecatedApiRules:
+    def test_legacy_translate_endpoint_is_a_warning(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "https://api.sarvam.ai/speech-to-text-translate"')],
+            strict=False,
+        )
+        assert any(i.check == "deprecated-api" and i.severity == "warning" for i in issues)
+
+    def test_current_rest_endpoint_is_not_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "https://api.sarvam.ai/speech-to-text"')],
+            strict=False,
+        )
+        assert issues == []
+
+    def test_realtime_websocket_is_not_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'REALTIME_WS_URL = "wss://api.sarvam.ai/speech-to-text-realtime/ws"')],
+            strict=False,
+        )
+        assert issues == []
+
+    def test_legacy_streaming_websocket_is_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "wss://api.sarvam.ai/speech-to-text/ws"')],
+            strict=False,
+        )
+        assert any(i.check == "deprecated-api" for i in issues)
+
+    def test_versioned_batch_job_is_not_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "https://api.sarvam.ai/speech-to-text/job/v1"')],
+            strict=False,
+        )
+        assert issues == []
+
+    def test_unversioned_batch_job_is_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "https://api.sarvam.ai/speech-to-text/job/init"')],
+            strict=False,
+        )
+        assert any(i.check == "deprecated-api" and "job/v1" in i.message for i in issues)
+
+    def test_legacy_document_intelligence_path_is_flagged(self) -> None:
+        issues = scan_added_lines_for_deprecated_api(
+            Path("app.py"),
+            [(3, 'url = "https://api.sarvam.ai/document-intelligence"')],
+            strict=False,
+        )
+        assert any(i.check == "deprecated-api" for i in issues)
+
+
+class TestAllowlistOnPullRequest:
+    def _patch_diff(self, tmp_path: Path, monkeypatch, line: str) -> None:
+        recipe = tmp_path / "examples" / "demo"
+        recipe.mkdir(parents=True)
+        (recipe / "app.py").write_text(line + "\n")
+        monkeypatch.setattr(validate_pr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            validate_pr,
+            "git_diff_name_only",
+            lambda base_ref, head_ref="HEAD": ["examples/demo/app.py"],
+        )
+        monkeypatch.setattr(
+            validate_pr,
+            "git_diff_added_lines",
+            lambda base_ref, file_path, head_ref="HEAD": [(1, line)],
+        )
+
+    def test_deprecated_model_on_an_added_line_is_a_warning(self, tmp_path: Path, monkeypatch) -> None:
+        self._patch_diff(tmp_path, monkeypatch, 'payload = {"model": "sarvam-30b", "messages": []}')
+        issues = validate_pr.validate_pr_with_refs("main")
+        assert any(i.check == "deprecated-model" and i.severity == "warning" for i in issues)
+
+    def test_strict_promotes_the_deprecated_model_to_an_error(self, tmp_path: Path, monkeypatch) -> None:
+        self._patch_diff(tmp_path, monkeypatch, 'payload = {"model": "sarvam-30b", "messages": []}')
+        issues = validate_pr.validate_pr_with_refs("main", strict=True)
+        assert any(i.check == "deprecated-model" and i.severity == "error" for i in issues)
+
+    def test_recommended_model_is_clean(self, tmp_path: Path, monkeypatch) -> None:
+        self._patch_diff(tmp_path, monkeypatch, 'payload = {"model": "sarvam-105b", "messages": []}')
+        issues = validate_pr.validate_pr_with_refs("main")
+        assert not any(i.check in {"deprecated-model", "unknown-model", "deprecated-api"} for i in issues)

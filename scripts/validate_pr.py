@@ -8,9 +8,10 @@ Usage:
 Runs on changed files under examples/ and getting-started/:
   - Secret / API key leak detection (blocking)
   - Client-side API key references (blocking)
+  - Model allowlist and legacy endpoint checks on added lines (warning,
+    or error when --strict is set)
 
 Recipe structure is validated separately for new kebab-case recipe dirs.
-See scripts/sarvam_api_rules.json for current Sarvam models (reference only).
 
 No network access or API keys are required.
 """
@@ -23,9 +24,13 @@ from pathlib import Path
 
 from sarvam_checks import (
     Issue,
+    git_diff_added_lines,
     git_diff_name_only,
+    scan_added_lines_for_allowlist,
+    scan_added_lines_for_deprecated_api,
     scan_file_for_client_side_keys,
     scan_file_for_secrets,
+    should_scan_file,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -41,8 +46,12 @@ def changed_paths(base_ref: str, head_ref: str = "HEAD") -> list[Path]:
     return paths
 
 
-def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
-    """Run PR-scoped secret checks between base_ref and head_ref."""
+def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD", *, strict: bool = False) -> list[Issue]:
+    """Run PR-scoped checks between base_ref and head_ref.
+
+    Secret findings are errors. Model allowlist and legacy-endpoint findings
+    are warnings unless ``strict`` is set, matching ``--strict`` on the CLI.
+    """
     issues: list[Issue] = []
     changed = changed_paths(base_ref, head_ref)
     if not changed:
@@ -56,13 +65,20 @@ def validate_pr_with_refs(base_ref: str, head_ref: str = "HEAD") -> list[Issue]:
         seen_files.add(full)
         issues.extend(scan_file_for_secrets(full, REPO_ROOT))
         issues.extend(scan_file_for_client_side_keys(full))
+        if not should_scan_file(full):
+            continue
+        added = git_diff_added_lines(base_ref, rel.as_posix(), head_ref)
+        if not added:
+            continue
+        issues.extend(scan_added_lines_for_allowlist(rel, added, strict=strict))
+        issues.extend(scan_added_lines_for_deprecated_api(rel, added, strict=strict))
 
     return issues
 
 
-def validate_pr(base_ref: str) -> list[Issue]:
-    """Run PR-scoped secret checks on changed files."""
-    return validate_pr_with_refs(base_ref, "HEAD")
+def validate_pr(base_ref: str, *, strict: bool = False) -> list[Issue]:
+    """Run PR-scoped checks on changed files."""
+    return validate_pr_with_refs(base_ref, "HEAD", strict=strict)
 
 
 def main() -> int:
@@ -86,7 +102,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    issues = validate_pr(args.base_ref)
+    issues = validate_pr(args.base_ref, strict=args.strict)
     errors = [i for i in issues if i.severity == "error"]
     warnings = [i for i in issues if i.severity == "warning"]
 
