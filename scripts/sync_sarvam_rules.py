@@ -68,15 +68,19 @@ def canonical_rules() -> dict:
         "language_codes": {
             "stt": [
                 "en-IN", "hi-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN", "kn-IN",
-                "ml-IN", "mr-IN", "pa-IN", "od-IN", "or-IN", "as-IN", "ur-IN", "ne-IN",
+                "ml-IN", "mr-IN", "pa-IN", "od-IN", "as-IN", "ur-IN", "ne-IN",
                 "kok-IN", "ks-IN", "sd-IN", "sa-IN", "sat-IN", "mni-IN", "brx-IN",
                 "mai-IN", "doi-IN",
             ],
             "tts": [
                 "en-IN", "hi-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN", "kn-IN",
-                "ml-IN", "mr-IN", "pa-IN", "od-IN", "or-IN",
+                "ml-IN", "mr-IN", "pa-IN", "od-IN",
             ],
-            "invalid": {},
+            "invalid": {
+                # or-IN is a common but wrong spelling for Odia in tts/stt —
+                # both endpoints only accept od-IN. See #157.
+                "or-IN": "od-IN",
+            },
         },
         "auth": {
             "preferred_header": "api-subscription-key",

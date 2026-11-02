@@ -81,13 +81,27 @@ class TestAllowlistValidation:
         )
         assert any(i.check == "unknown-model" for i in issues)
 
-    def test_or_in_language_code_allowed(self) -> None:
+    def test_od_in_language_code_allowed(self) -> None:
+        issues = scan_added_lines_for_allowlist(
+            Path("examples/new-recipe/app.py"),
+            [(8, '"target_language_code": "od-IN"')],
+            strict=True,
+        )
+        assert not any(i.check == "language-code" for i in issues)
+
+    def test_or_in_language_code_flagged(self) -> None:
+        # or-IN is not accepted by tts/stt (only dubbing and
+        # speech_to_text_realtime_streaming use that spelling) — see #157.
         issues = scan_added_lines_for_allowlist(
             Path("examples/new-recipe/app.py"),
             [(8, '"target_language_code": "or-IN"')],
             strict=True,
         )
-        assert not any(i.check == "language-code" for i in issues)
+        lang_issues = [i for i in issues if i.check == "language-code"]
+        assert lang_issues, "or-IN should be flagged as an invalid language code"
+        assert lang_issues[0].severity == "error"
+        assert "od-IN" in lang_issues[0].message
+
     def test_canonical_rules_have_required_keys(self) -> None:
         rules = canonical_rules()
         assert rules["schema_version"] == 1
