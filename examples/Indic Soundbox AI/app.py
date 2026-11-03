@@ -140,4 +140,4 @@ def get_audio_route(audio_id):
         return jsonify({'error': 'Audio not found or already retrieved'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001) 
+    app.run(debug=os.getenv('FLASK_DEBUG', 'False').lower() == 'true', port=5001) 
