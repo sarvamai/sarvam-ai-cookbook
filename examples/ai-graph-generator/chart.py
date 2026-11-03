@@ -143,7 +143,6 @@ class VisualizationAgent:
                     "__name__": "__main__",
                     "plt": plt,
                     "np": np,
-                    "os": os,
                 },
             )
 
