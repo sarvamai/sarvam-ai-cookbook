@@ -137,7 +137,14 @@ class VisualizationAgent:
             if os.path.exists(plot_path):
                 os.remove(plot_path)
 
-            exec(self.last_generated_code, {"__name__": "__main__"})
+            exec(
+                self.last_generated_code,
+                {
+                    "__name__": "__main__",
+                    "plt": plt,
+                    "np": np,
+                },
+            )
 
             # The system prompt asks the model to save to plot.png; if it didn't,
             # fall back to saving whatever figure is currently open.
