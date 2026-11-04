@@ -25,6 +25,9 @@ LANGUAGE_CODE_RE = re.compile(
     r"""
     ["'](?:source_language_code|target_language_code|language_code)["']
     \s*:\s*["']([a-z]{2,4}-IN)["']
+    |(?<![A-Za-z0-9_])
+    (?:source_language_code|target_language_code|language_code)
+    \s*:\s*["']([a-z]{2,4}-IN)["']
     |(?:source_language_code|target_language_code|language_code)\s*=
     \s*["']([a-z]{2,4}-IN)["']
     """,
@@ -105,7 +108,7 @@ def extract_language_codes(line: str) -> list[str]:
     """Return BCP-47 language codes referenced on a line of code."""
     codes: list[str] = []
     for match in LANGUAGE_CODE_RE.finditer(line):
-        value = match.group(1) or match.group(2)
+        value = next((g for g in match.groups() if g), None)
         if value:
             codes.append(value)
     return codes
