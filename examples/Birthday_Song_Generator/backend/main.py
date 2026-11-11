@@ -16,9 +16,15 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Enable CORS
+allowed_origins_env = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000"
+)
+allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -94,7 +100,8 @@ async def generate_song(data: UserAnswers):
         ) from exc
 
     result = response.json()
-    content = result.get("choices", [{}])[0].get("message", {}).get("content")
+    choices = result.get("choices") or [{}]
+    content = choices[0].get("message", {}).get("content")
     if not content:
         return {"quotes": "The song came back empty — please try again."}
 
