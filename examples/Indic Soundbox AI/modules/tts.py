@@ -60,7 +60,7 @@ def _call_sarvam_tts(text_chunk, lang_code, speaker='shubh', model='bulbul:v3'):
         'Content-Type': 'application/json'
     }
     payload = {
-        'text': text_chunk,
+        'inputs': [text_chunk],
         'target_language_code': lang_code,
         'speaker': speaker,
         'model': model
