@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request, jsonify, render_template, Response
 from dotenv import load_dotenv
 import uuid # For generating unique IDs
@@ -14,9 +15,31 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Temporary in-memory store for audio data
-# For a production app, consider a more robust solution (e.g., Redis, temp files with cleanup)
+# Temporary in-memory store for audio data with bounded capacity and TTL
+MAX_AUDIO_STORE_ENTRIES = 50
+AUDIO_STORE_TTL_SECONDS = 300
 temp_audio_store = {}
+temp_audio_timestamps = {}
+
+
+def _store_temp_audio(audio_id: str, data_uri: str) -> None:
+    """Store audio with TTL eviction and bounded max entry count."""
+    now = time.monotonic()
+    expired = [
+        k for k, ts in temp_audio_timestamps.items()
+        if now - ts > AUDIO_STORE_TTL_SECONDS
+    ]
+    for k in expired:
+        temp_audio_timestamps.pop(k, None)
+        temp_audio_store.pop(k, None)
+
+    while len(temp_audio_store) >= MAX_AUDIO_STORE_ENTRIES:
+        oldest_key = next(iter(temp_audio_store))
+        temp_audio_store.pop(oldest_key, None)
+        temp_audio_timestamps.pop(oldest_key, None)
+
+    temp_audio_store[audio_id] = data_uri
+    temp_audio_timestamps[audio_id] = now
 
 # Check for API key at startup
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
@@ -101,18 +124,7 @@ def tts_route():
         print(f"/tts route: Received base64 audio content from TTS module, length: {len(audio_base64_content)}")
 
         audio_id = str(uuid.uuid4())
-        temp_audio_store[audio_id] = f"data:audio/wav;base64,{audio_base64_content}"
-        
-        # Optional: Add a simple cleanup mechanism for old entries if server runs long
-        # This is a very basic example; a proper TTL cache would be better.
-        if len(temp_audio_store) > 100: # Keep store size manageable
-            # Remove the oldest item (dictionaries are ordered in Python 3.7+)
-            try:
-                oldest_key = next(iter(temp_audio_store))
-                del temp_audio_store[oldest_key]
-                print(f"/tts route: Cleaned up oldest audio_id: {oldest_key}")
-            except StopIteration:
-                pass # Store is empty
+        _store_temp_audio(audio_id, f"data:audio/wav;base64,{audio_base64_content}")
 
         print(f"/tts route: Stored audio with id: {audio_id}")
         return jsonify({'audio_id': audio_id})
@@ -123,6 +135,7 @@ def tts_route():
 @app.route('/get_audio/<audio_id>', methods=['GET'])
 def get_audio_route(audio_id):
     print(f"/get_audio route: Request for audio_id: {audio_id}")
+    temp_audio_timestamps.pop(audio_id, None)
     audio_data_uri = temp_audio_store.pop(audio_id, None)
 
     if audio_data_uri:
