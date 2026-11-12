@@ -177,6 +177,8 @@ class CaptionSession:
     # this tighter interval (see _partial_translate_inflight guard).
     PARTIAL_TRANSLATE_INTERVAL_SECONDS = 1.5
 
+    MAX_QUEUE_SIZE = 100
+
     def __init__(self, sid, language_code, mode, target_language=None):
         self.sid = sid
         self.language_code = language_code
@@ -184,7 +186,7 @@ class CaptionSession:
         self.target_language = target_language
         self.client = None
         self.loop = asyncio.new_event_loop()
-        self.queue = asyncio.Queue()
+        self.queue = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
         self.thread = threading.Thread(target=self._run, daemon=True)
         self._stopped = False
         # time.monotonic() is an arbitrary-epoch clock (often seconds since
@@ -199,11 +201,19 @@ class CaptionSession:
     def start(self):
         self.thread.start()
 
+    def _enqueue_bounded(self, item):
+        if self.queue.full():
+            try:
+                self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
+        self.queue.put_nowait(item)
+
     def send_audio(self, audio_b64):
-        if self._stopped:
+        if self._stopped or self.loop.is_closed():
             return
         try:
-            asyncio.run_coroutine_threadsafe(self.queue.put(audio_b64), self.loop)
+            self.loop.call_soon_threadsafe(self._enqueue_bounded, audio_b64)
         except RuntimeError:
             self._stopped = True  # loop died (e.g. connection never opened)
 
@@ -211,8 +221,10 @@ class CaptionSession:
         if self._stopped:
             return
         self._stopped = True
+        if self.loop.is_closed():
+            return
         try:
-            asyncio.run_coroutine_threadsafe(self.queue.put(None), self.loop)
+            self.loop.call_soon_threadsafe(self._enqueue_bounded, None)
         except RuntimeError:
             pass  # loop already dead, nothing to stop
 
