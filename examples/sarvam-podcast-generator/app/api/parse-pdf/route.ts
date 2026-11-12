@@ -5,41 +5,101 @@ const API_KEY = process.env.SARVAM_API_KEY ?? '';
 const BASE_URL = 'https://api.sarvam.ai/doc-digitization/job/v1';
 const HEADERS = { 'api-subscription-key': API_KEY, 'Content-Type': 'application/json' };
 
+const MAX_ZIP_ENTRIES = 1000;
+const MAX_ENTRY_UNCOMPRESSED_BYTES = 10 * 1024 * 1024; // 10 MB per entry
+const MAX_TOTAL_UNCOMPRESSED_BYTES = 25 * 1024 * 1024; // 25 MB total
+
+class ZipValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ZipValidationError';
+  }
+}
+
 // Minimal ZIP extractor using the central directory — no external dependency.
 // Returns concatenated text of all entries whose name ends with one of `extensions`.
 function extractTextFromZip(buf: Buffer, extensions: string[]): string {
+  if (buf.length < 22) {
+    throw new ZipValidationError('Invalid ZIP: buffer too small');
+  }
+
   // Locate End of Central Directory record (signature 0x06054b50), searching from the end.
   let eocd = -1;
   for (let i = buf.length - 22; i >= 0; i--) {
     if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
   }
-  if (eocd === -1) throw new Error('Invalid ZIP: no end-of-central-directory record');
+  if (eocd === -1) throw new ZipValidationError('Invalid ZIP: no end-of-central-directory record');
 
   const total = buf.readUInt16LE(eocd + 10);
+  if (total > MAX_ZIP_ENTRIES) {
+    throw new ZipValidationError(`ZIP exceeds maximum entry limit (${MAX_ZIP_ENTRIES})`);
+  }
+
   let ptr = buf.readUInt32LE(eocd + 16); // offset of start of central directory
+  if (ptr >= buf.length) {
+    throw new ZipValidationError('Invalid ZIP: central directory offset out of bounds');
+  }
 
   const parts: string[] = [];
+  let totalUncompressed = 0;
+
   for (let n = 0; n < total; n++) {
+    if (ptr + 46 > buf.length) {
+      throw new ZipValidationError('Invalid ZIP: truncated central directory header');
+    }
     if (buf.readUInt32LE(ptr) !== 0x02014b50) break; // central dir file header signature
     const method = buf.readUInt16LE(ptr + 10);
     const compSize = buf.readUInt32LE(ptr + 20);
+    const uncompSize = buf.readUInt32LE(ptr + 24);
     const fnLen = buf.readUInt16LE(ptr + 28);
     const extraLen = buf.readUInt16LE(ptr + 30);
     const commentLen = buf.readUInt16LE(ptr + 32);
     const localOffset = buf.readUInt32LE(ptr + 42);
+
+    const nextPtr = ptr + 46 + fnLen + extraLen + commentLen;
+    if (nextPtr > buf.length || nextPtr <= ptr) {
+      throw new ZipValidationError('Invalid ZIP: central directory entry out of bounds');
+    }
     const name = buf.toString('utf8', ptr + 46, ptr + 46 + fnLen);
 
     if (extensions.some(ext => name.toLowerCase().endsWith(ext))) {
+      if (method !== 0 && method !== 8) {
+        throw new ZipValidationError(`Unsupported ZIP compression method: ${method}`);
+      }
+      if (compSize > MAX_ENTRY_UNCOMPRESSED_BYTES || uncompSize > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+        throw new ZipValidationError('ZIP entry exceeds maximum allowed uncompressed size');
+      }
+      if (localOffset + 30 > buf.length) {
+        throw new ZipValidationError('Invalid ZIP: local file header offset out of bounds');
+      }
       // Read the local header to find where the actual data starts.
       const lfnLen = buf.readUInt16LE(localOffset + 26);
       const lextraLen = buf.readUInt16LE(localOffset + 28);
       const dataStart = localOffset + 30 + lfnLen + lextraLen;
+      if (dataStart < localOffset + 30 || dataStart + compSize > buf.length) {
+        throw new ZipValidationError('Invalid ZIP: compressed entry payload out of bounds');
+      }
       const compData = buf.subarray(dataStart, dataStart + compSize);
-      const raw = method === 0 ? compData : inflateRawSync(compData); // 0 = stored, 8 = deflate
+      let raw: Buffer;
+      if (method === 0) {
+        raw = compData;
+      } else {
+        try {
+          raw = inflateRawSync(compData, { maxOutputLength: MAX_ENTRY_UNCOMPRESSED_BYTES });
+        } catch (err) {
+          throw new ZipValidationError(
+            `ZIP decompression failed or exceeded size limit: ${err instanceof Error ? err.message : 'unknown error'}`
+          );
+        }
+      }
+      totalUncompressed += raw.length;
+      if (totalUncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES) {
+        throw new ZipValidationError('ZIP archive exceeds maximum total uncompressed size');
+      }
       parts.push(raw.toString('utf8'));
     }
 
-    ptr += 46 + fnLen + extraLen + commentLen;
+    ptr = nextPtr;
   }
 
   return parts.join('\n\n');
@@ -155,9 +215,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Document Intelligence error:', error);
+    const status = error instanceof ZipValidationError ? 400 : 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process PDF' },
-      { status: 500 }
+      { status }
     );
   }
 }
