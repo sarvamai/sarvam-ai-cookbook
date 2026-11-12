@@ -31,7 +31,7 @@ def generate_english_presentation(topic: str, api_key: str, slide_count: int) ->
     Return a single JSON array of objects. Each object must have "title" and "content" (a string with 3-4 bullet points, separated by newlines).
     """
     payload = {"model": "sarvam-105b", "max_tokens": 4000, "messages": [{"role": "user", "content": prompt}]}
-    response = requests.post(CHAT_API_URL, headers=headers, json=payload)
+    response = requests.post(CHAT_API_URL, headers=headers, json=payload, timeout=60)
     response.raise_for_status()
     response_text = response.json()["choices"][0]["message"]["content"]
     if not response_text:
@@ -49,7 +49,7 @@ def translate_content(text: str, target_lang: str, api_key: str) -> str:
         return text
     headers = {"api-subscription-key": api_key, "Content-Type": "application/json"}
     payload = {"input": text, "source_language_code": "en-IN", "target_language_code": target_lang}
-    response = requests.post(TRANSLATE_API_URL, headers=headers, json=payload)
+    response = requests.post(TRANSLATE_API_URL, headers=headers, json=payload, timeout=30)
     response.raise_for_status()
     return response.json()["translated_text"]
 

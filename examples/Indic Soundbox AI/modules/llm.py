@@ -121,7 +121,7 @@ WhatsApp और Facebook पर अपनी दुकान की जानक
         'stream': False
     }
 
-    response = requests.post('https://api.sarvam.ai/v1/chat/completions', json=payload, headers=headers)
+    response = requests.post('https://api.sarvam.ai/v1/chat/completions', json=payload, headers=headers, timeout=60)
 
     if not response.ok:
         raise Exception(f"Chat API request failed with status {response.status_code}: {response.text}")

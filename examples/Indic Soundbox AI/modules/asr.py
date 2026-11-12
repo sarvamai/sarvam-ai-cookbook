@@ -20,7 +20,7 @@ def speech_to_text(audio_blob):
     }
     headers = {'api-subscription-key': SARVAM_API_KEY}
 
-    response = requests.post('https://api.sarvam.ai/speech-to-text', files=files, data=data, headers=headers)
+    response = requests.post('https://api.sarvam.ai/speech-to-text', files=files, data=data, headers=headers, timeout=60)
 
     if not response.ok:
         raise Exception(f"ASR API request failed with status {response.status_code}: {response.text}")
