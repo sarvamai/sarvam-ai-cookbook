@@ -76,9 +76,13 @@ class MultilingualChatbot:
             }.get(target_lang, "en-IN")
 
             # Otherwise, use the translation API
+            translate_headers = {
+                "api-subscription-key": self.api_key,
+                "Content-Type": "application/json",
+            }
             response = requests.post(
                 self.translate_url,
-                headers=self.headers,
+                headers=translate_headers,
                 json={
                     "input": text,
                     "source_language_code": "auto",
