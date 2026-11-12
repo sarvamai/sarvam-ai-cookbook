@@ -35,12 +35,13 @@ class Issue(NamedTuple):
 # ---------------------------------------------------------------------------
 
 SECRET_ASSIGNMENT_RE = re.compile(
-    r"(?:SARVAM_API_KEY|api[_-]?subscription[_-]?key)\s*=\s*"
-    r"""[\"'](?!YOUR_SARVAM|your[_-]?key|<your|your-key|your_sarvam|real-value)[^\"']{10,}[\"']""",
+    r"""(?:SARVAM_API_KEY|api[_-]?subscription[_-]?key)["']?\s*[:=]\s*"""
+    r"""["'](?!YOUR_SARVAM|your[_-]?key|<your|your-key|your_sarvam|real-value)[^"']{10,}["']""",
     re.IGNORECASE,
 )
 
 SARVAM_KEY_PREFIX_RE = re.compile(r"\bsk_[a-zA-Z0-9]{16,}\b")
+SARVAM_HEX_KEY_RE = re.compile(r"\b[0-9a-fA-F]{32}\b")
 
 PLACEHOLDER_KEY_PATTERNS = (
     "your-sarvam-api-key",
@@ -111,7 +112,7 @@ def should_scan_file(path: Path) -> bool:
         return False
     if path.name in SCAN_SKIP_NAMES:
         return False
-    if path.name == ".env":
+    if path.name.startswith(".env"):
         return True
     if path.suffix.lower() in BINARY_SUFFIXES:
         return False
@@ -242,6 +243,23 @@ def scan_text_for_secrets(text: str, rel_path: str) -> list[Issue]:
                 "Remove the key immediately and rotate it from the Sarvam dashboard.",
             )
         )
+    for match in SARVAM_HEX_KEY_RE.finditer(text):
+        token = match.group(0)
+        if _is_placeholder_secret(token):
+            continue
+        start_idx = max(0, text.rfind("\n", 0, match.start()))
+        end_idx = text.find("\n", match.end())
+        line = text[start_idx:end_idx if end_idx != -1 else len(text)].lower()
+        if any(kw in line for kw in ("sarvam", "api", "key", "secret", "token", "subscription", "auth")):
+            if not any(token in issue.message for issue in issues):
+                issues.append(
+                    Issue(
+                        "error",
+                        "secrets",
+                        f"Possible Sarvam 32-char hex API key in {rel_path}: {token[:10]}...",
+                        "Remove the key immediately and load it from environment variables.",
+                    )
+                )
     return issues
 
 
@@ -256,13 +274,13 @@ def scan_file_for_secrets(file_path: Path, repo_root: Path | None = None) -> lis
         else str(file_path)
     )
 
-    if file_path.name == ".env":
+    if file_path.name == ".env" or (file_path.name.startswith(".env") and not file_path.name.endswith(".example")):
         return [
             Issue(
                 "error",
                 "secrets",
-                f"Committed .env file: {rel}",
-                "Never commit .env. Add .env to .gitignore and provide .env.example instead.",
+                f"Committed {file_path.name} file: {rel}",
+                "Never commit .env files. Add .env* to .gitignore and provide .env.example instead.",
             )
         ]
 
