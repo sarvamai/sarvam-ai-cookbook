@@ -66,7 +66,7 @@ def _call_sarvam_tts(text_chunk, lang_code, speaker='shubh', model='bulbul:v3'):
         'model': model
     }
 
-    response = requests.post('https://api.sarvam.ai/text-to-speech', json=payload, headers=headers)
+    response = requests.post('https://api.sarvam.ai/text-to-speech', json=payload, headers=headers, timeout=60)
 
     if not response.ok:
         error_msg = f"Sarvam TTS API request failed for chunk with status {response.status_code}: {response.text}"

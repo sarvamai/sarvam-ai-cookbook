@@ -30,7 +30,8 @@ def detect_language(text):
     response = requests.post(
         "https://api.sarvam.ai/text-lid",
         headers=headers,
-        json={"input": text}
+        json={"input": text},
+        timeout=30,
     )
     return response.json()
 
@@ -87,7 +88,8 @@ def translate_text(text, target_language, mode="formal"):
                 "mode": mode,
                 "output_script": "fully-native",
                 "numerals_format": "international"
-            }
+            },
+            timeout=30,
         )
         data = response.json()
         # On any chunk failure, fall back to the original text for that chunk.
@@ -108,7 +110,8 @@ def transliterate_text(text, source_language_code, target_language_code):
             "input": text,
             "source_language_code": source_language_code,
             "target_language_code": target_language_code
-        }
+        },
+        timeout=30,
     )
     return response.json()
 
@@ -143,7 +146,8 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
             "model": "sarvam-105b",
             "temperature": 0.7,
             "max_tokens": 4000
-        }
+        },
+        timeout=60,
     )
     
     return response.json() 

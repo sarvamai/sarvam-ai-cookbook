@@ -24,7 +24,10 @@ def get_chat_response(api_key, messages):
     }
     # This sends the request to the Sarvam AI API.
     response = requests.post(
-        "https://api.sarvam.ai/v1/chat/completions", headers=headers, json=data
+        "https://api.sarvam.ai/v1/chat/completions",
+        headers=headers,
+        json=data,
+        timeout=60,
     )
     response.raise_for_status()  # This will raise an error if the request fails.
     # This extracts the bot's message from the JSON response.

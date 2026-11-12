@@ -19,7 +19,7 @@ def identify_language(text: str, api_key: str) -> Dict[str, Any]:
         "input": text
     }
     
-    response = requests.post(LID_API_URL, headers=headers, json=payload)
+    response = requests.post(LID_API_URL, headers=headers, json=payload, timeout=30)
     response.raise_for_status()
     return response.json()
 
@@ -46,7 +46,7 @@ def get_explanation(question: str, language_code: str, grade_level: int, api_key
         "temperature": 0.7
     }
     
-    response = requests.post(CHAT_API_URL, headers=headers, json=payload)
+    response = requests.post(CHAT_API_URL, headers=headers, json=payload, timeout=60)
     response.raise_for_status()
     return response.json()
 

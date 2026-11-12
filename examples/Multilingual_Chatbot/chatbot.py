@@ -85,6 +85,7 @@ class MultilingualChatbot:
                     "target_language_code": target_language_code,
                     "model": "mayura:v1",
                 },
+                timeout=30,
             )
             response.raise_for_status()
             return response.json()["translated_text"]
@@ -116,6 +117,7 @@ class MultilingualChatbot:
                 self.base_url,
                 headers=self.headers,
                 json={"model": "sarvam-105b", "max_tokens": 2000, "messages": messages, "temperature": 0.7},
+                timeout=60,
             )
             response.raise_for_status()
 

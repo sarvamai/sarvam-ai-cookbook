@@ -22,7 +22,8 @@ class FeedbackAnalyzer:
         response = requests.post(
             url,
             headers=headers,
-            json={"input": text}
+            json={"input": text},
+            timeout=30,
         )
         response.raise_for_status()
         return response.json()
@@ -49,7 +50,8 @@ class FeedbackAnalyzer:
         response = requests.post(
             url,
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=30,
         )
         
         if response.status_code != 200:
@@ -90,7 +92,7 @@ class FeedbackAnalyzer:
             ],
         }
 
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             print(f"Error response: {response.text}")
             response.raise_for_status()

@@ -19,7 +19,7 @@ def identify_language(text):
     }
     payload = {'input': text}
 
-    response = requests.post('https://api.sarvam.ai/text-lid', json=payload, headers=headers)
+    response = requests.post('https://api.sarvam.ai/text-lid', json=payload, headers=headers, timeout=30)
 
     if not response.ok:
         raise Exception(f"LID API request failed with status {response.status_code}: {response.text}")

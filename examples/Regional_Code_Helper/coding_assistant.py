@@ -28,7 +28,8 @@ class CodingAssistant:
             response = requests.post(
                 SARVAM_API_URL,
                 headers=self.headers,
-                json=payload
+                json=payload,
+                timeout=60,
             )
             
             if response.status_code == 200:

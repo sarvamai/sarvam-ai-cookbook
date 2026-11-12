@@ -85,6 +85,7 @@ async def generate_song(data: UserAnswers):
                 # internal thinking (otherwise content can come back empty).
                 "reasoning_effort": "low"
             },
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as exc:
