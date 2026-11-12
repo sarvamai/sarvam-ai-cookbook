@@ -1,6 +1,7 @@
 import argparse
 import csv
 import json
+import os
 import requests
 from typing import List, Dict
 import pandas as pd
@@ -42,7 +43,7 @@ class FeedbackAnalyzer:
         # Format request body as per API documentation
         payload = {
             "input": text,
-            "source_language_code": source_lang,
+            "source_language_code": source_lang or "auto",
             "target_language_code": "en-IN"
         }
         
@@ -149,7 +150,13 @@ class FeedbackAnalyzer:
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze multilingual customer feedback')
-    parser.add_argument('--api-key', required=True, help='Sarvam API key')
+    api_key_default = os.getenv("SARVAM_API_KEY")
+    parser.add_argument(
+        '--api-key',
+        default=api_key_default,
+        required=api_key_default is None,
+        help='Sarvam API key (defaults to SARVAM_API_KEY env var)'
+    )
     parser.add_argument('--input-file', default='dummy.csv', help='Input CSV file with feedback')
     parser.add_argument('--output-file', default='feedback_analysis.csv', help='Output CSV file for analysis results')
     args = parser.parse_args()
