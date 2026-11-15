@@ -66,7 +66,8 @@ def main():
     try:
         # First identify the language
         lid_result = identify_language(args.question, api_key)
-        language_code = lid_result.get("language_code", "en-IN")
+        # The API can return "language_code": null, which .get()'s default would not replace.
+        language_code = lid_result.get("language_code") or "en-IN"
         
         print(f"\nDetected Language: {language_code}")
         print("\nGenerating explanation...\n")
