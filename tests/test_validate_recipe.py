@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from validate_recipe import (  # noqa: E402
     Issue,
+    auto_fix,
     check_emoji,
     check_gitignore,
     check_notebook_structure,
@@ -242,6 +243,44 @@ class TestGitignore:
         d = _make_recipe(tmp_path)
         (d / ".gitignore").unlink()
         assert check_gitignore(d) == []
+
+
+# ---------------------------------------------------------------------------
+# TestAutoFix
+# ---------------------------------------------------------------------------
+
+
+class TestAutoFix:
+    def test_keeps_non_ascii_gitignore_comments(self, tmp_path: Path) -> None:
+        # A recipe may carry a non-ASCII (e.g. Indic) comment in .gitignore.
+        # auto_fix() must read and write it as UTF-8, not the platform default
+        # (cp1252 on Windows), or the call raises / the comment is mangled.
+        d = _make_recipe(tmp_path)
+        comment = "# टिप्पणी: ఉదాహరణ ফাইল"
+        (d / ".gitignore").write_text(f"{comment}\n.env\n", encoding="utf-8")
+
+        fixes = auto_fix(d)
+
+        lines = (d / ".gitignore").read_text(encoding="utf-8").splitlines()
+        assert lines[0] == comment
+        assert {".env", "sample_data/*", "outputs/*"} <= set(lines)
+        assert "Added 'sample_data/*' to .gitignore" in fixes
+
+    def test_creates_missing_files_as_utf8(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        (d / ".gitignore").unlink()
+        (d / ".env.example").unlink()
+
+        auto_fix(d)
+
+        assert (d / ".gitignore").read_text(encoding="utf-8").splitlines() == [
+            ".env",
+            "sample_data/*",
+            "outputs/*",
+        ]
+        assert (d / ".env.example").read_text(encoding="utf-8") == (
+            "SARVAM_API_KEY=your-sarvam-api-key\n"
+        )
 
 
 # ---------------------------------------------------------------------------
