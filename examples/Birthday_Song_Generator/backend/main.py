@@ -13,7 +13,8 @@ SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+# Resolve against this file's folder so the app starts from any working directory.
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
 
 # Enable CORS
 app.add_middleware(

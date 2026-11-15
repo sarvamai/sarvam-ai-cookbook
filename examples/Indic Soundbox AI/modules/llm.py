@@ -7,7 +7,10 @@ load_dotenv()
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 SARVAM_BEARER = f"Bearer {SARVAM_API_KEY}"
 
-MERCHANT_CONTEXT_FILE = "merchant_context.md"
+# Resolve against the app folder, not the current working directory.
+MERCHANT_CONTEXT_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "merchant_context.md"
+)
 
 def load_merchant_context():
     """Loads merchant context from the markdown file."""
