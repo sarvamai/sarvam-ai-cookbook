@@ -96,24 +96,30 @@ if st.session_state.get('trip'):
 
     if lang not in cache:
         with st.spinner("Creating your personalized itinerary..."):
-            itinerary_response = generate_itinerary(
-                destination=trip['destination'],
-                duration=trip['duration'],
-                interests=trip['interests'],
-                budget=trip['budget'],
-                language=LANG_NAMES.get(lang, 'English')
-            )
-            itinerary = itinerary_response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            try:
+                itinerary_response = generate_itinerary(
+                    destination=trip['destination'],
+                    duration=trip['duration'],
+                    interests=trip['interests'],
+                    budget=trip['budget'],
+                    language=LANG_NAMES.get(lang, 'English')
+                )
+                itinerary = itinerary_response.get('choices', [{}])[0].get('message', {}).get('content', '')
 
-            tips_response = generate_itinerary(
-                destination=trip['destination'],
-                duration=1,
-                interests=["Practical Tips"],
-                budget=trip['budget'],
-                language=LANG_NAMES.get(lang, 'English')
-            )
-            tips = tips_response.get('choices', [{}])[0].get('message', {}).get('content', '')
-            cache[lang] = {'itinerary': itinerary, 'tips': tips}
+                tips_response = generate_itinerary(
+                    destination=trip['destination'],
+                    duration=1,
+                    interests=["Practical Tips"],
+                    budget=trip['budget'],
+                    language=LANG_NAMES.get(lang, 'English')
+                )
+                tips = tips_response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            except RuntimeError as e:
+                # Not cached, so the next rerun tries again.
+                st.error(f"Could not create your itinerary. {e}")
+                st.stop()
+            else:
+                cache[lang] = {'itinerary': itinerary, 'tips': tips}
 
     result = cache[lang]
     st.markdown(f"### Your Personalized Itinerary for {trip['destination']}")

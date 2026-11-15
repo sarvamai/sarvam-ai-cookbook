@@ -145,5 +145,16 @@ def generate_itinerary(destination, duration, interests, budget, language="en"):
             "max_tokens": 4000
         }
     )
-    
-    return response.json() 
+
+    if not response.ok:
+        # Surface the API's own message (e.g. quota or auth errors) instead of
+        # letting the caller render an empty itinerary.
+        try:
+            message = response.json().get("error", {}).get("message")
+        except ValueError:
+            message = None
+        raise RuntimeError(
+            f"Sarvam API error {response.status_code}: {message or response.reason}"
+        )
+
+    return response.json()
