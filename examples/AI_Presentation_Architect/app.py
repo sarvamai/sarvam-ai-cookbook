@@ -36,12 +36,21 @@ def generate_english_presentation(topic: str, api_key: str, slide_count: int) ->
     response_text = response.json()["choices"][0]["message"]["content"]
     if not response_text:
         raise ValueError("The model returned an empty response. Please try again, or reduce the slide count.")
-    # Strip code fences if the model wrapped the JSON in them.
-    response_text = response_text.strip()
-    if response_text.startswith("```"):
-        response_text = re.sub(r"^```(?:json)?\s*", "", response_text)
-        response_text = re.sub(r"\s*```$", "", response_text).strip()
-    return json.loads(response_text)
+    return json.loads(extract_json_payload(response_text))
+
+def extract_json_payload(text: str) -> str:
+    """Returns the JSON part of a model reply, ignoring any text or code fence around it."""
+    text = text.strip()
+    # The model may wrap the JSON in a code fence, with or without a sentence before it.
+    fenced = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    if fenced:
+        return fenced.group(1).strip()
+    # No fence: keep the outermost JSON array or object.
+    starts = [i for i in (text.find("["), text.find("{")) if i != -1]
+    end = max(text.rfind("]"), text.rfind("}"))
+    if starts and end > min(starts):
+        return text[min(starts):end + 1]
+    return text
 
 def translate_content(text: str, target_lang: str, api_key: str) -> str:
     """Translates text to the target language using the Translate API."""
