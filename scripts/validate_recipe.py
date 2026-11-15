@@ -537,15 +537,15 @@ def auto_fix(recipe_dir: Path) -> list[str]:
     required_patterns = [".env", "sample_data/*", "outputs/*"]
 
     if not gitignore.exists():
-        gitignore.write_text("\n".join(required_patterns) + "\n")
+        gitignore.write_text("\n".join(required_patterns) + "\n", encoding="utf-8")
         fixes.append("Created .gitignore with required patterns")
     else:
-        content = gitignore.read_text().splitlines()
+        content = gitignore.read_text(encoding="utf-8").splitlines()
         for pat in required_patterns:
             if pat not in content:
                 content.append(pat)
                 fixes.append(f"Added '{pat}' to .gitignore")
-        gitignore.write_text("\n".join(content) + "\n")
+        gitignore.write_text("\n".join(content) + "\n", encoding="utf-8")
 
     for folder in ["sample_data", "outputs"]:
         path = recipe_dir / folder
@@ -557,7 +557,7 @@ def auto_fix(recipe_dir: Path) -> list[str]:
 
     env_example = recipe_dir / ".env.example"
     if not env_example.exists():
-        env_example.write_text("SARVAM_API_KEY=your-sarvam-api-key\n")
+        env_example.write_text("SARVAM_API_KEY=your-sarvam-api-key\n", encoding="utf-8")
         fixes.append("Created .env.example")
 
     return fixes
