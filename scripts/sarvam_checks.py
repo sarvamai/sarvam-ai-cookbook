@@ -42,6 +42,19 @@ SECRET_ASSIGNMENT_RE = re.compile(
 
 SARVAM_KEY_PREFIX_RE = re.compile(r"\bsk_[a-zA-Z0-9]{16,}\b")
 
+DEPRECATED_API_RULES = [
+    (
+        re.compile(r"api\.sarvam\.ai/v1/translate"),
+        "The /v1/translate endpoint is deprecated. Use Mayura (v1) instead.",
+        "deprecated-api",
+    ),
+    (
+        re.compile(r"api\.sarvam\.ai/v1/speech-to-text-translate"),
+        "The /v1/speech-to-text-translate endpoint is deprecated. Use Saaras (v3) + Mayura (v1).",
+        "deprecated-api",
+    ),
+]
+
 PLACEHOLDER_KEY_PATTERNS = (
     "your-sarvam-api-key",
     "your_sarvam_api_key",
@@ -79,19 +92,17 @@ LEGACY_EXAMPLE_DIRS = frozenset({"TEMPLATE"})
 
 
 def is_recipe_directory(path: Path) -> bool:
-    """Return True for notebook recipe dirs under examples/ (not app-style examples).
-
-    Apps may include `.env.example` but lack a main `.ipynb`; those are excluded.
+    """Return True for any cookbook recipe directory under examples/.
+    
+    We now include all directories directly under examples/ (except TEMPLATE)
+    so that they can be validated by validate_recipe.py, even if they are
+    missing required files like .env.example or notebooks.
     """
     if path.parent.name != "examples" or not path.is_dir():
         return False
     if path.name in LEGACY_EXAMPLE_DIRS:
         return False
-    if " " in path.name:
-        return False
-    if not (path / ".env.example").exists():
-        return False
-    return any(path.glob("*.ipynb"))
+    return True
 
 
 def example_dir_for_file(file_path: Path) -> Path | None:
