@@ -1,0 +1,2 @@
+litellm[proxy]>=1.52.0
+openai>=1.40.0
