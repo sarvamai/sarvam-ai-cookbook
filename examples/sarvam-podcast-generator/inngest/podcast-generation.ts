@@ -352,7 +352,6 @@ async function textToSpeech(text: string, language: string, speaker: 'host' | 'g
                 target_language_code: language,
                 speaker: selectedVoice,
                 pace: 1.0,
-                temperature: 0.6,
                 speech_sample_rate: 22050,
                 model: 'bulbul:v3'
             }),
