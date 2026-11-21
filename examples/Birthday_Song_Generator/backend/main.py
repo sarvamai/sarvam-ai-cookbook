@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 import requests
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 # Load .env file
 load_dotenv()
@@ -13,7 +14,8 @@ SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Enable CORS
 app.add_middleware(

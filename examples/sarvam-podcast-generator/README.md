@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 
 ### Backend & Processing
 - **Background Jobs**: Inngest for reliable async processing
-- **Job Tracking**: In-memory job store (see note below); swap in Redis for production
+- **Job Tracking**: Upstash Redis when configured, with an in-memory fallback for local development
 - **File Storage**: UploadThing for audio file management (currently stubbed to in-memory data URLs — see note below)
 - **APIs**: 
   - Sarvam 105B (Script Generation)
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
 - Node.js 18+ installed
 - Sarvam AI API key ([get one here](https://www.sarvam.ai/))
 - Inngest account ([get one here](https://inngest.com/))
-- Redis instance and UploadThing account — optional for local dev (see note below); required for a real deployment
+- Upstash Redis REST credentials and UploadThing account — optional for local dev (see note below); configure Upstash Redis for shared job tracking in a real deployment
 
 ### Installation
 
@@ -69,8 +69,9 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
    # Sarvam AI API Configuration
    SARVAM_API_KEY=your_sarvam_api_key_here
    
-   # Redis Configuration (for job tracking) — optional locally, see note below
-   REDIS_URL=your_redis_url
+   # Upstash Redis Configuration (for shared job tracking) — optional for local development
+   UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
+   UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
    
    # UploadThing Configuration (for file storage) — optional locally, see note below
    UPLOADTHING_TOKEN=your_uploadthing_token
@@ -79,7 +80,7 @@ https://github.com/user-attachments/assets/71574674-85bf-4b59-a40c-f2f48980b751
    INNGEST_SIGNING_KEY=your_inngest_signing_key
    ```
 
-   > **Note:** As shipped, `lib/job-store.ts` always uses an in-memory job map (no Redis client wired up yet) and `lib/upload-audio.ts`/`lib/uploadthing.ts` always store audio as in-memory base64 data URLs regardless of `REDIS_URL`/`UPLOADTHING_TOKEN`. This is fine for local single-process development but won't survive a server restart or work across multiple serverless instances — wire up real Redis and UploadThing clients before deploying.
+   > **Note:** `lib/job-store.ts` uses Upstash Redis when both Redis variables are configured; without them it uses an in-memory map suitable only for local single-process development. `lib/upload-audio.ts`/`lib/uploadthing.ts` still store audio as in-memory base64 data URLs regardless of `UPLOADTHING_TOKEN`.
    >
    > This stub also has a side effect during generation: each TTS segment's "URL" is actually its full base64 audio data (several hundred KB), and Inngest persists that as the step's return value. This occasionally trips Inngest's per-step output size limit (`output_too_large` in the `inngest dev` logs) — verified during testing, where a 22-segment Hindi podcast hit it 4 times but recovered via automatic retry with no data loss, just extra latency. Wiring up a real UploadThing token resolves this, since steps would then store a short real URL instead of the raw audio data.
 

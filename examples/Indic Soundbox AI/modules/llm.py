@@ -1,5 +1,6 @@
 import requests
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,7 +8,7 @@ load_dotenv()
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 SARVAM_BEARER = f"Bearer {SARVAM_API_KEY}"
 
-MERCHANT_CONTEXT_FILE = "merchant_context.md"
+MERCHANT_CONTEXT_FILE = Path(__file__).resolve().parent.parent / "merchant_context.md"
 
 def load_merchant_context():
     """Loads merchant context from the markdown file."""

@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from validate_recipe import (  # noqa: E402
     Issue,
+    auto_fix,
     check_emoji,
     check_gitignore,
     check_notebook_structure,
@@ -242,6 +243,22 @@ class TestGitignore:
         d = _make_recipe(tmp_path)
         (d / ".gitignore").unlink()
         assert check_gitignore(d) == []
+
+
+class TestAutoFix:
+    def test_preserves_non_ascii_gitignore_content(self, tmp_path: Path) -> None:
+        d = _make_recipe(tmp_path)
+        gitignore = d / ".gitignore"
+        gitignore.write_bytes("# टिप्पणी\n.env\n".encode("utf-8"))
+
+        auto_fix(d)
+
+        assert gitignore.read_text(encoding="utf-8").splitlines() == [
+            "# टिप्पणी",
+            ".env",
+            "sample_data/*",
+            "outputs/*",
+        ]
 
 
 # ---------------------------------------------------------------------------

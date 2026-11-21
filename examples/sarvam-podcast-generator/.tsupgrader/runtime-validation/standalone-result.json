@@ -1,0 +1,108 @@
+{
+  "planHash": "edb1396be8724521df39da40acc2c4c8e881421d5b7942437671a11ba090e0fd",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-18T21:07:37.1286025Z",
+  "retryCount": 1,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 41266,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "tsc-no-emit",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "",
+        "durationMs": 5820
+      },
+      {
+        "name": "home-route-200",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022\u003E\u003Chead\u003E\u003Cmeta charSet=\u0022utf-8\u0022/\u003E\u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/app_globals_73c37791.css\u0022 data-precedence=\u0022next_static/chunks/app_globals_73c37791.css\u0022/\u003E\u003Clink rel=\u0022preload\u0022 as=\u0022script\u0022 fetchPriority=\u0022low\u0022 href=\u0022/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_fd44f5a4._.js\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_client_8f19e6fb._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_2ecbf5fa._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_%40swc_helpers_cjs_00636ac3._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/_e69f0d32._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/_93808211._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_1a6ee436._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/app_favicon_ico_mjs_659ce808._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/app_layout_tsx_c0237562._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/_713fd7c6._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_react-icons_fa6_index_mjs_00e856c4._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_react-icons_lib_74ccc930._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_6e29eefd._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/app_page_tsx_fbdaf659._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Ctitle\u003ESarvam AI Podcast Generator\u003C/title\u003E\u003Cmeta name=\u0022description\u0022 content=\u0022AI-powered document analysis using Sarvam Vision and podcast generation using Sarvam AI APIs\u0022/\u003E\u003Clink rel=\u0022icon\u0022 href=\u0022/favicon.ico?favicon.45db1c09.ico\u0022 sizes=\u0022256x256\u0022 type=\u0022image/x-icon\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_build_polyfills_polyfill-nomodule.js\u0022 noModule=\u0022\u0022\u003E\u003C/script\u003E\u003C/head\u003E\u003Cbody class=\u0022min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 antialiased\u0022\u003E\u003Cdiv class=\u0022min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950\u0022\u003E\u003Cdiv class=\u0022container mx-auto px-4 py-8 max-w-7xl\u0022\u003E\u003Cdiv class=\u0022text-center mb-12\u0022\u003E\u003Ch1 class=\u0022text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4\u0022\u003EAI Podcast Generator\u003C/h1\u003E\u003Cp class=\u0022text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed\u0022\u003ETransform your PDF documents into engaging AI-powered podcasts using Sarvam 105B for script generation, Sarvam Bulbul v3 TTS for text-to-speech, and Sarvam Vision for PDF parsing\u003C/p\u003E\u003Cdiv class=\u0022flex items-center justify-center gap-4 mt-6\u0022\u003E\u003Cspan data-slot=\u0022badge\u0022 class=\u0022inline-flex items-center justify-center rounded-md border px-2 py-0.5 font-medium w-fit whitespace-nowrap shrink-0 [\u0026amp;\u0026gt;svg]:size-3 gap-1 [\u0026amp;\u0026gt;svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a\u0026amp;]:hover:bg-secondary/90 text-sm\u0022\u003E\u003Csvg xmlns=\u0022http://www.w3.org/2000/svg\u0022 width=\u002224\u0022 height=\u002224\u0022 viewBox=\u00220 0 24 24\u0022 fill=\u0022none\u0022 stroke=\u0022currentColor\u0022 stroke-width=\u00222\u0022 stroke-linecap=\u0022round\u0022 stroke-linejoin=\u0022round\u0022 class=\u0022lucide lucide-brain w-4 h-4 mr-1\u0022 aria-hidden=\u0022true\u0022\u003E\u003Cpath d=\u0022M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M17.599 6.5a3 3 0 0 0 .399-1.375\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M6.003 5.125A3 3 0 0 0 6.401 6.5\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M3.477 10.896a4 4 0 0 1 .585-.396\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M19.938 10.5a4 4 0 0 1 .585.396\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M6 18a4 4 0 0 1-1.967-.516\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M19.967 17.484A4 4 0 0 1 18 18\u0022\u003E\u003C/path\u003E\u003C/svg\u003ESarvam 105B\u003C/span\u003E\n\u2026[truncated]",
+        "durationMs": 7205
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E sarvam-podcast-generator@0.1.0 test\r\n\u003E vitest run\r\n\r\n\r\n\u001B[1m\u001B[46m RUN \u001B[49m\u001B[22m \u001B[36mv3.2.7 \u001B[39m\u001B[90mF:/OSource/gemma/gemma/sarvam-ai-cookbook/examples/sarvam-podcast-generator\u001B[39m\r\n\r\n \u001B[32m\u2713\u001B[39m lib/job-store.test.ts \u001B[2m(\u001B[22m\u001B[2m4 tests\u001B[22m\u001B[2m)\u001B[22m\u001B[32m 11\u001B[2mms\u001B[22m\u001B[39m\r\n\r\n\u001B[2m Test Files \u001B[22m \u001B[1m\u001B[32m1 passed\u001B[39m\u001B[22m\u001B[90m (1)\u001B[39m\r\n\u001B[2m      Tests \u001B[22m \u001B[1m\u001B[32m4 passed\u001B[39m\u001B[22m\u001B[90m (4)\u001B[39m\r\n\u001B[2m   Start at \u001B[22m 02:37:35\r\n\u001B[2m   Duration \u001B[22m 581ms\u001B[2m (transform 78ms, setup 0ms, collect 69ms, tests 11ms, environment 0ms, prepare 199ms)\u001B[22m\r\n\r\n",
+        "durationMs": 2157,
+        "testResults": {
+          "testFramework": "vitest",
+          "runnerDetectedFrom": "package_json",
+          "testsTotal": 4,
+          "testsPassed": 4,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      }
+    ],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "ci"
+        ],
+        "cwd": "F:\\OSource\\gemma\\gemma\\sarvam-ai-cookbook\\examples\\sarvam-podcast-generator",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tsc-no-emit",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npx.CMD",
+        "args": [
+          "tsc",
+          "--noEmit"
+        ],
+        "cwd": "F:\\OSource\\gemma\\gemma\\sarvam-ai-cookbook\\examples\\sarvam-podcast-generator",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "home-route-200",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "dev"
+        ],
+        "cwd": "F:\\OSource\\gemma\\gemma\\sarvam-ai-cookbook\\examples\\sarvam-podcast-generator",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test"
+        ],
+        "cwd": "F:\\OSource\\gemma\\gemma\\sarvam-ai-cookbook\\examples\\sarvam-podcast-generator",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}
